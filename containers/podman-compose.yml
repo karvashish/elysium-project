@@ -5,12 +5,14 @@ services:
     env_file:
       - ../.env
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ../../containers/postgresql/data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
   redis:
     image: redis:latest
+    volumes:
+      - ../../containers/redis/data:/data
     ports:
       - "6379:6379"
 
@@ -32,3 +34,6 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
+    driver: local
