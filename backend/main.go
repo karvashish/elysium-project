@@ -19,5 +19,12 @@ func main() {
 		return
 	}
 
+	err = wgutil.InitWireGuardInterface()
+	if err != nil {
+		fmt.Printf("Failed to initialize WireGuard interface: %v\n", err)
+		return
+	}
+
 	fmt.Printf("Keys generated successfully.\nPrivate Key saved as '%s/%s'.\nPublic Key: %s\n", path, filename, publicKey)
+	fmt.Println("WireGuard interface 'wg0' initialized successfully.")
 }
