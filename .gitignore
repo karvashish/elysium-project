@@ -1,0 +1,12 @@
+/backend/bin/ 
+/backend/pkg/ 
+/client/target/ 
+/containers/volumes/ 
+*.log 
+*.pid 
+.env 
+.vscode/ 
+.idea/ 
+*.swp 
+/certificates/*.key 
+/certificates/*.crt 
