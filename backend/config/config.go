@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/joho/godotenv"
@@ -17,6 +18,13 @@ func LoadEnv() {
 	if err != nil {
 		log.Println("No .env file found, using default environment variables")
 	}
+}
+
+func GetEnv(key, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return defaultValue
 }
 
 func InitializeDatabaseConnection() *pgxpool.Pool {
@@ -42,6 +50,31 @@ func InitializeDatabaseConnection() *pgxpool.Pool {
 
 	log.Println("Connected to PostgreSQL database")
 	return dbPool
+}
+
+func RunMigrations(migrationDir string) error {
+	files, err := os.ReadDir(migrationDir)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		if filepath.Ext(file.Name()) == ".sql" {
+			filePath := filepath.Join(migrationDir, file.Name())
+			query, err := os.ReadFile(filePath)
+			if err != nil {
+				return err
+			}
+
+			_, err = DBPool.Exec(context.Background(), string(query))
+			if err != nil {
+				return err
+			}
+
+			log.Printf("Migration applied: %s\n", file.Name())
+		}
+	}
+	return nil
 }
 
 func CloseDatabaseConnection() {
