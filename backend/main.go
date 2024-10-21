@@ -3,16 +3,17 @@ package main
 import (
 	"elysium-backend/config"
 	"elysium-backend/internal/routes"
+	"elysium-backend/pkg/db"
 	"log"
 	"net/http"
 )
 
 func main() {
 	config.LoadEnv()
-	config.DBPool = config.InitializeDatabaseConnection()
+	db.DBPool = db.InitializeDatabaseConnection()
 
 	migrationDir := config.GetEnv("MIGRATION_PATH", "migrations")
-	err := config.RunMigrations(migrationDir)
+	err := db.RunMigrations(migrationDir)
 	if err != nil {
 		log.Fatalf("Migrations failed: %v", err)
 	}
@@ -21,5 +22,5 @@ func main() {
 
 	server.ListenAndServe()
 
-	config.CloseDatabaseConnection()
+	db.CloseDatabaseConnection()
 }
