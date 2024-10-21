@@ -5,14 +5,14 @@ services:
     env_file:
       - ../.env
     volumes:
-      - ../../containers/postgresql/data:/var/lib/postgresql/data
+    - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
   redis:
     image: redis:latest
     volumes:
-      - ../../containers/redis/data:/data
+      - redis_data:/data
     ports:
       - "6379:6379"
 

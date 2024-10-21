@@ -1,30 +1,17 @@
 package main
 
 import (
-	"elysium-backend/internal/wgutil"
-	"fmt"
+	"elysium-backend/config"
+	"elysium-backend/internal/routes"
+	"net/http"
 )
 
 func main() {
-	privateKey, publicKey, err := wgutil.GenerateKeys()
-	if err != nil {
-		fmt.Printf("Failed to generate keys: %v\n", err)
-		return
-	}
+	config.LoadEnv()
+	config.DBPool = config.InitializeDatabaseConnection()
+	server := &http.Server{Addr: ":8080", Handler: routes.SetupRoutes()}
 
-	path := "config/keys"
-	filename := "server_private.key"
-	if err := wgutil.SaveKeyToFile(path, filename, privateKey); err != nil {
-		fmt.Printf("Failed to save private key: %v\n", err)
-		return
-	}
+	server.ListenAndServe()
 
-	err = wgutil.InitWireGuardInterface()
-	if err != nil {
-		fmt.Printf("Failed to initialize WireGuard interface: %v\n", err)
-		return
-	}
-
-	fmt.Printf("Keys generated successfully.\nPrivate Key saved as '%s/%s'.\nPublic Key: %s\n", path, filename, publicKey)
-	fmt.Println("WireGuard interface 'wg0' initialized successfully.")
+	config.CloseDatabaseConnection()
 }
