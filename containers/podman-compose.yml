@@ -5,7 +5,7 @@ services:
     env_file:
       - ../.env
     volumes:
-    - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
@@ -21,14 +21,14 @@ services:
     env_file:
       - ../.env
     ports:
-      - "8080:80"
+      - "8002:80"
     depends_on:
       - postgres
 
   redisinsight:
-    image: redislabs/redisinsight:latest
+    image: redis/redisinsight:latest
     ports:
-      - "8001:8001"
+      - "8001:5540"
     depends_on:
       - redis
 

@@ -18,7 +18,9 @@ func main() {
 		log.Fatalf("Migrations failed: %v", err)
 	}
 
-	server := &http.Server{Addr: ":8080", Handler: routes.SetupRoutes()}
+	port := ":" + config.GetEnv("PORT", "8080")
+
+	server := &http.Server{Addr: port, Handler: routes.SetupRoutes()}
 
 	server.ListenAndServe()
 
