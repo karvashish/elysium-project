@@ -22,7 +22,10 @@ func main() {
 
 	server := &http.Server{Addr: port, Handler: routes.SetupRoutes()}
 
-	server.ListenAndServe()
+	err = server.ListenAndServe()
+	if err != nil {
+		log.Fatalf("Failed to listen and serve: %v", err)
+	}
 
 	db.CloseDatabaseConnection()
 }
