@@ -1,0 +1,36 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Teardown Environment",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/teardown.cmd",
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Setup Environment",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/setup.cmd",
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Teardown and Setup",
+      "dependsOn": [
+        "Teardown Environment",
+        "Setup Environment"
+      ],
+      "dependsOrder": "sequence",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    }
+  ]
+}
