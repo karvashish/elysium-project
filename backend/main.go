@@ -1,15 +1,20 @@
 package main
 
 import (
+	"flag"
+	"log"
+	"net/http"
+
 	"elysium-backend/config"
 	"elysium-backend/internal/routes"
 	"elysium-backend/pkg/db"
-	"log"
-	"net/http"
 )
 
 func main() {
-	config.LoadEnv()
+	envFilePath := flag.String("env", "../.env", "Path to the env file")
+	flag.Parse()
+
+	config.LoadEnv(*envFilePath)
 	db.DBPool = db.InitializeDatabaseConnection()
 
 	migrationDir := config.GetEnv("MIGRATION_PATH", "migrations")

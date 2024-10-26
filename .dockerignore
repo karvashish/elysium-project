@@ -1,0 +1,10 @@
+**
+
+!backend/
+!.env
+
+backend/node_modules/
+backend/.git/
+backend/*.log
+backend/test/
+backend/.DS_Store
