@@ -31,6 +31,37 @@
         "isDefault": true
       },
       "problemMatcher": []
+    },
+    {
+      "label": "Build Backend Image",
+      "type": "shell",
+      "command": "podman build -t elysium-backend -f backend/Dockerfile .",
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Run Backend Server",
+      "type": "shell",
+      "command": "podman run --rm --cap-add=NET_ADMIN --cap-add=SYS_MODULE --network=containers_default -p 8080:8080 elysium-backend",
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Build and Run Backend",
+      "dependsOn": [
+        "Build Backend Image",
+        "Run Backend Server"
+      ],
+      "dependsOrder": "sequence",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "problemMatcher": []
     }
   ]
 }
