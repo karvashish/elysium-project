@@ -6,5 +6,5 @@ cd ..
 
 podman volume prune -f
 
-del /f /q vault_init_keys.txt
+del /f /q containers\vault\vault_init_keys.txt
 echo Teardown completed successfully.
