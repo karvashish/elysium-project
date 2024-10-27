@@ -91,10 +91,9 @@ func InitWireGuardInterface(server_interface string, server_port int, server_IP,
 	backend_server := repositories.Peer{
 		PublicKey:  pubKey,
 		AssignedIP: server_IP,
-		Status:     "active",
+		Status:     true,
 		IsGateway:  false,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
+		CreatedOn:  time.Now().UTC(),
 	}
 
 	if err := services.InsertPeer(backend_server); err != nil {

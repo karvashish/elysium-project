@@ -12,11 +12,11 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS peers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     public_key VARCHAR(44) NOT NULL,
-    assigned_ip INET NOT NULL,
-    status BOOLEAN DEFAULT TRUE,
+    assigned_ip INET NOT NULL UNIQUE,
+    status BOOLEAN DEFAULT FALSE,
     is_gateway BOOLEAN DEFAULT FALSE,
     metadata JSONB,
-    created_on TIMESTAMP DEFAULT NULL
+    created_on TIMESTAMPTZ DEFAULT NULL
 );
 
 CREATE TABLE IF NOT EXISTS tokens (

@@ -6,5 +6,7 @@ import (
 
 func InsertPeer(newPeer repositories.Peer) error {
 
+	repositories.InsertPeer(&newPeer)
+
 	return nil
 }
