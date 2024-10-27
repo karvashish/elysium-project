@@ -33,8 +33,20 @@ func CreateWireGuardInterface(ifaceName string) error {
 	return nil
 }
 
-func InitWireGuardInterface() error {
-	err := CreateWireGuardInterface("wg0")
+func setIPAddress(ifaceName string, ipAddress string, ipMask string) error {
+	link, err := netlink.LinkByName(ifaceName)
+	if err != nil {
+		return err
+	}
+	addr, err := netlink.ParseAddr(ipAddress + ipMask)
+	if err != nil {
+		return err
+	}
+	return netlink.AddrAdd(link, addr)
+}
+
+func InitWireGuardInterface(server_interface string, server_port int, server_IP string, network_mask string) error {
+	err := CreateWireGuardInterface(server_interface)
 	if err != nil {
 		return fmt.Errorf("failed to create WireGuard interface: %w", err)
 	}
@@ -57,16 +69,18 @@ func InitWireGuardInterface() error {
 		return fmt.Errorf("failed to parse private key: %w", err)
 	}
 
-	port := 51820
-
 	config := wgtypes.Config{
 		PrivateKey: &privateKey,
-		ListenPort: &port,
+		ListenPort: &server_port,
 	}
 
-	err = client.ConfigureDevice("wg0", config)
+	err = client.ConfigureDevice(server_interface, config)
 	if err != nil {
 		return fmt.Errorf("failed to configure WireGuard interface: %w", err)
+	}
+
+	if err := setIPAddress(server_interface, server_IP, network_mask); err != nil {
+		return fmt.Errorf("failed to Ip for wg0 interface: %w", err)
 	}
 
 	return nil

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"strconv"
 
 	"elysium-backend/config"
 	"elysium-backend/internal/routes"
@@ -24,7 +25,15 @@ func main() {
 		log.Fatalf("Migrations failed: %v", err)
 	}
 
-	if err := wgutil.InitWireGuardInterface(); err != nil {
+	server_interface := config.GetEnv("BACKEND_WG_INTERFACE", "wg0")
+	server_port, err := strconv.Atoi(config.GetEnv("BACKEND_WG_PORT", "51820"))
+	if err != nil {
+		log.Fatalf("invalid Port Provided: %v", err)
+	}
+	server_IP := config.GetEnv("BACKEND_WG_IP", "10.0.0.1")
+	network_mask := config.GetEnv("WG_NETWORK_MASK", "/24")
+
+	if err := wgutil.InitWireGuardInterface(server_interface, server_port, server_IP, network_mask); err != nil {
 		log.Fatalf("Failed setup wireguard network: %v", err)
 	}
 
