@@ -11,7 +11,7 @@ import (
 func GenerateKeys() (string, string, error) {
 	privateKey, err := wgtypes.GeneratePrivateKey()
 	if err != nil {
-		return "", "", fmt.Errorf("error generating private key: %w", err)
+		return "", "", fmt.Errorf("failed to generate private key: %w", err)
 	}
 
 	publicKey := privateKey.PublicKey()
@@ -23,15 +23,19 @@ func SaveKeyToFile(path, filename, key string) error {
 	keyPath := filepath.Join(path, filename)
 
 	if err := os.MkdirAll(path, os.ModePerm); err != nil {
-		return err
+		return fmt.Errorf("failed to create directory %s: %v", path, err)
 	}
 
 	file, err := os.Create(keyPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create file %s: %v", keyPath, err)
 	}
 	defer file.Close()
 
 	_, err = file.WriteString(key)
-	return err
+	if err != nil {
+		return fmt.Errorf("failed to write key to file %s: %v", keyPath, err)
+	}
+
+	return nil
 }

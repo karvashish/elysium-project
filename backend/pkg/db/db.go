@@ -17,15 +17,15 @@ func InitializeDatabaseConnection() *pgxpool.Pool {
 
 	poolConfig, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
-		log.Fatalf("Unable to parse connection string: %v\n", err)
+		log.Fatalf("error parsing database connection string: %v", err)
 	}
 
 	dbPool, err := pgxpool.ConnectConfig(context.Background(), poolConfig)
 	if err != nil {
-		log.Fatalf("Unable to connect to the database: %v\n", err)
+		log.Fatalf("error connecting to the database: %v", err)
 	}
 
-	log.Println("Connected to PostgreSQL database")
+	log.Println("Successfully connected to PostgreSQL database")
 	return dbPool
 }
 
@@ -49,14 +49,14 @@ func getEnv(key, defaultValue string) string {
 func CloseDatabaseConnection() {
 	if DBPool != nil {
 		DBPool.Close()
-		log.Println("Database connection closed")
+		log.Println("Database connection closed successfully")
 	}
 }
 
 func RunMigrations(migrationDir string) error {
 	files, err := os.ReadDir(migrationDir)
 	if err != nil {
-		return err
+		return fmt.Errorf("error reading migration directory %s: %v", migrationDir, err)
 	}
 
 	for _, file := range files {
@@ -64,15 +64,15 @@ func RunMigrations(migrationDir string) error {
 			filePath := filepath.Join(migrationDir, file.Name())
 			query, err := os.ReadFile(filePath)
 			if err != nil {
-				return err
+				return fmt.Errorf("error reading migration file %s: %v", filePath, err)
 			}
 
 			_, err = DBPool.Exec(context.Background(), string(query))
 			if err != nil {
-				return err
+				return fmt.Errorf("error applying migration %s: %v", file.Name(), err)
 			}
 
-			log.Printf("Migration applied: %s\n", file.Name())
+			log.Printf("Migration applied successfully: %s", file.Name())
 		}
 	}
 	return nil
