@@ -15,58 +15,61 @@ func CreateWireGuardInterface(ifaceName string) error {
 		},
 		LinkType: "wireguard",
 	}
-	err := netlink.LinkAdd(link)
-	if err != nil {
-		return fmt.Errorf("failed to create WireGuard interface %s: %v", ifaceName, err)
+	if err := netlink.LinkAdd(link); err != nil {
+		return fmt.Errorf("error creating WireGuard interface %s: %v", ifaceName, err)
 	}
 
 	createdLink, err := netlink.LinkByName(ifaceName)
 	if err != nil {
-		return fmt.Errorf("failed to get link %s: %v", ifaceName, err)
+		return fmt.Errorf("error retrieving interface %s after creation: %v", ifaceName, err)
 	}
 
-	err = netlink.LinkSetUp(createdLink)
-	if err != nil {
-		return fmt.Errorf("failed to bring up link %s: %v", ifaceName, err)
+	if err := netlink.LinkSetUp(createdLink); err != nil {
+		return fmt.Errorf("error setting interface %s up: %v", ifaceName, err)
 	}
 
 	return nil
 }
 
-func setIPAddress(ifaceName string, ipAddress string, ipMask string) error {
+func setIPAddress(ifaceName, ipAddress, ipMask string) error {
 	link, err := netlink.LinkByName(ifaceName)
 	if err != nil {
-		return err
+		return fmt.Errorf("error retrieving link for %s: %v", ifaceName, err)
 	}
+
 	addr, err := netlink.ParseAddr(ipAddress + ipMask)
 	if err != nil {
-		return err
+		return fmt.Errorf("error parsing IP address %s%s: %v", ipAddress, ipMask, err)
 	}
-	return netlink.AddrAdd(link, addr)
+
+	if err := netlink.AddrAdd(link, addr); err != nil {
+		return fmt.Errorf("error adding IP address %s%s to %s: %v", ipAddress, ipMask, ifaceName, err)
+	}
+
+	return nil
 }
 
-func InitWireGuardInterface(server_interface string, server_port int, server_IP string, network_mask string) error {
-	err := CreateWireGuardInterface(server_interface)
-	if err != nil {
-		return fmt.Errorf("failed to create WireGuard interface: %w", err)
+func InitWireGuardInterface(server_interface string, server_port int, server_IP, network_mask string) error {
+	if err := CreateWireGuardInterface(server_interface); err != nil {
+		return fmt.Errorf("failed to create WireGuard interface: %v", err)
 	}
 
 	client, err := wgctrl.New()
 	if err != nil {
-		return fmt.Errorf("failed to initialize WireGuard client: %w", err)
+		return fmt.Errorf("error initializing WireGuard client: %v", err)
 	}
 	defer client.Close()
 
 	privKey, pubKey, err := GenerateKeys()
 	if err != nil {
-		return fmt.Errorf("failed to GenerateKeys: %w", err)
+		return fmt.Errorf("error generating keys: %v", err)
 	}
 	SaveKeyToFile("config/keys/", "server_private.key", privKey)
-	fmt.Println(pubKey)
+	fmt.Println("Public key:", pubKey)
 
 	privateKey, err := wgtypes.ParseKey(privKey)
 	if err != nil {
-		return fmt.Errorf("failed to parse private key: %w", err)
+		return fmt.Errorf("error parsing private key: %v", err)
 	}
 
 	config := wgtypes.Config{
@@ -74,13 +77,12 @@ func InitWireGuardInterface(server_interface string, server_port int, server_IP 
 		ListenPort: &server_port,
 	}
 
-	err = client.ConfigureDevice(server_interface, config)
-	if err != nil {
-		return fmt.Errorf("failed to configure WireGuard interface: %w", err)
+	if err := client.ConfigureDevice(server_interface, config); err != nil {
+		return fmt.Errorf("error configuring WireGuard interface %s: %v", server_interface, err)
 	}
 
 	if err := setIPAddress(server_interface, server_IP, network_mask); err != nil {
-		return fmt.Errorf("failed to Ip for wg0 interface: %w", err)
+		return fmt.Errorf("error setting IP address for interface %s: %v", server_interface, err)
 	}
 
 	return nil
