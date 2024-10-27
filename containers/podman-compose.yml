@@ -32,8 +32,23 @@ services:
     depends_on:
       - redis
 
+  vault:
+    image: hashicorp/vault:latest
+    environment:
+      VAULT_ADDR: "http://vault:8200"
+    volumes:
+      - vault_data:/vault/file                
+      - ./vault/config:/vault/config            
+    ports:
+      - "8200:8200"
+    cap_add:
+      - IPC_LOCK
+    command: "server" 
+
 volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  vault_data:
     driver: local

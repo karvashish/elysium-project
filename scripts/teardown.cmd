@@ -2,8 +2,9 @@
 
 cd containers
 podman-compose down
+cd ..
 
-REM Remove volumes created by Podman Compose
 podman volume prune -f
 
+del /f /q vault_init_keys.txt
 echo Teardown completed successfully.
