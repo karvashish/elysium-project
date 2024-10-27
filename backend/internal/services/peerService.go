@@ -1,6 +1,10 @@
 package services
 
-func insertPeer() error {
+import (
+	"elysium-backend/internal/repositories"
+)
+
+func InsertPeer(newPeer repositories.Peer) error {
 
 	return nil
 }

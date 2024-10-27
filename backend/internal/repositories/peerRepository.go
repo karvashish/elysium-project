@@ -5,7 +5,7 @@ import (
 )
 
 type Peer struct {
-	ID         int64
+	ID         *int64
 	PublicKey  string
 	AssignedIP string
 	Status     string

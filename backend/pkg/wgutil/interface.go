@@ -1,7 +1,10 @@
 package wgutil
 
 import (
+	"elysium-backend/internal/repositories"
+	"elysium-backend/internal/services"
 	"fmt"
+	"time"
 
 	"github.com/vishvananda/netlink"
 	"golang.zx2c4.com/wireguard/wgctrl"
@@ -83,6 +86,19 @@ func InitWireGuardInterface(server_interface string, server_port int, server_IP,
 
 	if err := setIPAddress(server_interface, server_IP, network_mask); err != nil {
 		return fmt.Errorf("error setting IP address for interface %s: %v", server_interface, err)
+	}
+
+	backend_server := repositories.Peer{
+		PublicKey:  pubKey,
+		AssignedIP: server_IP,
+		Status:     "active",
+		IsGateway:  false,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+
+	if err := services.InsertPeer(backend_server); err != nil {
+		return fmt.Errorf("error saving backend server in peer table %v", err)
 	}
 
 	return nil
