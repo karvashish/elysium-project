@@ -6,8 +6,6 @@
 git clone <repository-url>
 cd <repository-directory>
 
-# Environment Setup Instructions
-
 ## Step 1: Verify Environment Configuration
 - **Description**: Check the `.env` file in the `project_root` directory.
 - **Goal**: Ensure the configuration values are correct for variables such as `DB_HOST`, `DB_USER`, `DB_PASSWORD`, etc.
