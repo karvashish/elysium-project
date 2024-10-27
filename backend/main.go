@@ -24,8 +24,7 @@ func main() {
 		log.Fatalf("Migrations failed: %v", err)
 	}
 
-	err = wgutil.InitWireGuardInterface()
-	if err != nil {
+	if err := wgutil.InitWireGuardInterface(); err != nil {
 		log.Fatalf("Failed setup wireguard network: %v", err)
 	}
 
@@ -33,8 +32,7 @@ func main() {
 
 	server := &http.Server{Addr: port, Handler: routes.SetupRoutes()}
 
-	err = server.ListenAndServe()
-	if err != nil {
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("Failed to listen and serve: %v", err)
 	}
 
