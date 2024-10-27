@@ -2,7 +2,6 @@ package wgutil
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/vishvananda/netlink"
 	"golang.zx2c4.com/wireguard/wgctrl"
@@ -53,13 +52,7 @@ func InitWireGuardInterface() error {
 	SaveKeyToFile("config/keys/", "server_private.key", privKey)
 	fmt.Println(pubKey)
 
-	privateKeyPath := "config/keys/server_private.key"
-	privateKeyData, err := os.ReadFile(privateKeyPath)
-	if err != nil {
-		return fmt.Errorf("failed to read private key: %w", err)
-	}
-
-	privateKey, err := wgtypes.ParseKey(string(privateKeyData))
+	privateKey, err := wgtypes.ParseKey(privKey)
 	if err != nil {
 		return fmt.Errorf("failed to parse private key: %w", err)
 	}
