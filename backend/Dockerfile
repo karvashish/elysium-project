@@ -12,6 +12,9 @@ FROM alpine:latest
 
 WORKDIR /root/
 
+# temp
+RUN apk add --no-cache wireguard-tools 
+
 COPY --from=build /app/main .
 COPY backend/migrations ./migrations
 COPY .env /root/.env

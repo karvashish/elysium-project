@@ -8,6 +8,7 @@ import (
 	"elysium-backend/config"
 	"elysium-backend/internal/routes"
 	"elysium-backend/pkg/db"
+	"elysium-backend/pkg/wgutil"
 )
 
 func main() {
@@ -21,6 +22,11 @@ func main() {
 	err := db.RunMigrations(migrationDir)
 	if err != nil {
 		log.Fatalf("Migrations failed: %v", err)
+	}
+
+	err = wgutil.InitWireGuardInterface()
+	if err != nil {
+		log.Fatalf("Failed setup wireguard network: %v", err)
 	}
 
 	port := ":" + config.GetEnv("PORT", "8080")

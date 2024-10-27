@@ -46,6 +46,13 @@ func InitWireGuardInterface() error {
 	}
 	defer client.Close()
 
+	privKey, pubKey, err := GenerateKeys()
+	if err != nil {
+		return fmt.Errorf("failed to GenerateKeys: %w", err)
+	}
+	SaveKeyToFile("config/keys/", "server_private.key", privKey)
+	fmt.Println(pubKey)
+
 	privateKeyPath := "config/keys/server_private.key"
 	privateKeyData, err := os.ReadFile(privateKeyPath)
 	if err != nil {
@@ -57,9 +64,11 @@ func InitWireGuardInterface() error {
 		return fmt.Errorf("failed to parse private key: %w", err)
 	}
 
+	port := 51820
+
 	config := wgtypes.Config{
 		PrivateKey: &privateKey,
-		ListenPort: new(int),
+		ListenPort: &port,
 	}
 
 	err = client.ConfigureDevice("wg0", config)
