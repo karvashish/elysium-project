@@ -1,12 +1,17 @@
 package services
 
 import (
+	"elysium-backend/internal/models"
 	"elysium-backend/internal/repositories"
+	"log"
 )
 
-func InsertPeer(newPeer repositories.Peer) error {
+func InsertPeer(newPeer models.Peer) error {
 
-	repositories.InsertPeer(&newPeer)
+	if err := repositories.InsertPeer(&newPeer); err != nil {
+		log.Printf("services.InsertPeer -> Error inserting peer : %v", err)
+		return err
+	}
 
 	return nil
 }

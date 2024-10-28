@@ -1,7 +1,7 @@
 package wgutil
 
 import (
-	"elysium-backend/internal/repositories"
+	"elysium-backend/internal/models"
 	"elysium-backend/internal/services"
 	"fmt"
 	"time"
@@ -68,7 +68,6 @@ func InitWireGuardInterface(server_interface string, server_port int, server_IP,
 		return fmt.Errorf("error generating keys: %v", err)
 	}
 	SaveKeyToFile("config/keys/", "server_private.key", privKey)
-	fmt.Println("Public key:", pubKey)
 
 	privateKey, err := wgtypes.ParseKey(privKey)
 	if err != nil {
@@ -88,7 +87,7 @@ func InitWireGuardInterface(server_interface string, server_port int, server_IP,
 		return fmt.Errorf("error setting IP address for interface %s: %v", server_interface, err)
 	}
 
-	backend_server := repositories.Peer{
+	backend_server := models.Peer{
 		PublicKey:  pubKey,
 		AssignedIP: server_IP,
 		Status:     true,
