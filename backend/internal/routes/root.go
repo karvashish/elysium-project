@@ -10,5 +10,7 @@ func SetupRoutes() *http.ServeMux {
 
 	mux.HandleFunc("/", handlers.BaseHandler)
 
+	PeerRoutes(mux)
+
 	return mux
 }
