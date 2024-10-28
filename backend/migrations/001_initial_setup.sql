@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS peers (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     public_key VARCHAR(44) NOT NULL,
     assigned_ip INET NOT NULL UNIQUE,
-    status BOOLEAN DEFAULT FALSE,
+    status VARCHAR(20),
     is_gateway BOOLEAN DEFAULT FALSE,
     metadata JSONB,
     created_on TIMESTAMPTZ DEFAULT NULL

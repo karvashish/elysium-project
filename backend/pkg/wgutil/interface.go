@@ -90,12 +90,12 @@ func InitWireGuardInterface(server_interface string, server_port int, server_IP,
 	backend_server := models.Peer{
 		PublicKey:  pubKey,
 		AssignedIP: server_IP,
-		Status:     true,
+		Status:     "active",
 		IsGateway:  false,
 		CreatedOn:  time.Now().UTC(),
 	}
 
-	if err := services.InsertPeer(backend_server); err != nil {
+	if err := services.InsertPeer(&backend_server); err != nil {
 		return fmt.Errorf("error saving backend server in peer table %v", err)
 	}
 

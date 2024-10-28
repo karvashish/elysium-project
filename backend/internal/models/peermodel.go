@@ -10,7 +10,7 @@ type Peer struct {
 	ID         *uuid.UUID
 	PublicKey  string
 	AssignedIP string
-	Status     bool
+	Status     string
 	IsGateway  bool
 	CreatedOn  time.Time
 }

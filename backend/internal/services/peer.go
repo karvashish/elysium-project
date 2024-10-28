@@ -6,9 +6,9 @@ import (
 	"log"
 )
 
-func InsertPeer(newPeer models.Peer) error {
+func InsertPeer(newPeer *models.Peer) error {
 
-	if err := repositories.InsertPeer(&newPeer); err != nil {
+	if err := repositories.InsertPeer(newPeer); err != nil {
 		log.Printf("services.InsertPeer -> Error inserting peer : %v", err)
 		return err
 	}
