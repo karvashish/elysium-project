@@ -4,6 +4,7 @@ import (
 	"elysium-backend/internal/models"
 	"elysium-backend/internal/services"
 	"fmt"
+	"net"
 	"time"
 
 	"github.com/vishvananda/netlink"
@@ -52,7 +53,7 @@ func setIPAddress(ifaceName, ipAddress, ipMask string) error {
 	return nil
 }
 
-func InitWireGuardInterface(server_interface string, server_port int, server_IP, network_mask string) error {
+func InitWireGuardInterface(server_interface string, server_port int, server_IP net.IP, network_mask string) error {
 	if err := CreateWireGuardInterface(server_interface); err != nil {
 		return fmt.Errorf("failed to create WireGuard interface: %v", err)
 	}
@@ -83,7 +84,7 @@ func InitWireGuardInterface(server_interface string, server_port int, server_IP,
 		return fmt.Errorf("error configuring WireGuard interface %s: %v", server_interface, err)
 	}
 
-	if err := setIPAddress(server_interface, server_IP, network_mask); err != nil {
+	if err := setIPAddress(server_interface, server_IP.String(), network_mask); err != nil {
 		return fmt.Errorf("error setting IP address for interface %s: %v", server_interface, err)
 	}
 

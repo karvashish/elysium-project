@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"net"
 	"net/http"
 	"strconv"
 
@@ -44,7 +45,7 @@ func setupWireGuard() {
 	serverIP := config.GetEnv("BACKEND_WG_IP", "10.0.0.1")
 	networkMask := config.GetEnv("WG_NETWORK_MASK", "/24")
 
-	if err := wgutil.InitWireGuardInterface(serverInterface, serverPort, serverIP, networkMask); err != nil {
+	if err := wgutil.InitWireGuardInterface(serverInterface, serverPort, net.ParseIP(serverIP), networkMask); err != nil {
 		log.Fatalf("Failed to set up WireGuard network: %v", err)
 	}
 }

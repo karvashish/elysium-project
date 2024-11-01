@@ -3,7 +3,7 @@ module elysium-backend
 go 1.18
 
 require (
-	github.com/gofrs/uuid v4.0.0+incompatible
+	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v4 v4.18.3
 	github.com/joho/godotenv v1.5.1
 	github.com/vishvananda/netlink v1.3.0
