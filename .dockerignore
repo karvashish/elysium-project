@@ -2,6 +2,7 @@
 
 !backend/
 !.env
+!client/
 
 backend/node_modules/
 backend/.git/

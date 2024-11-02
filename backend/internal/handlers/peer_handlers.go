@@ -33,5 +33,14 @@ func GetPeerHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostPeerHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "GetPeer!")
+	exePath, err := services.CompileClient()
+	if err != nil {
+		http.Error(w, "Compilation failed", http.StatusInternalServerError)
+		return
+	}
+
+	relativeDownloadLink := fmt.Sprintf("/downloads/%s", exePath)
+
+	response := map[string]string{"download_link": relativeDownloadLink}
+	json.NewEncoder(w).Encode(response)
 }

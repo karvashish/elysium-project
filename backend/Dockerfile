@@ -12,12 +12,12 @@ FROM alpine:latest
 
 WORKDIR /root/
 
-# temp
-RUN apk add --no-cache wireguard-tools 
+RUN apk add --no-cache wireguard-tools cargo
 
 COPY --from=build /app/main .
 COPY backend/migrations ./migrations
 COPY .env /root/.env
+COPY client /root/client
 
 EXPOSE 8080
 CMD ["./main", "-env", "/root/.env"]

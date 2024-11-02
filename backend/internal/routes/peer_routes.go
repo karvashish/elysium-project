@@ -8,7 +8,7 @@ import (
 )
 
 func PeerRoutes(mux *mux.Router) {
-	mux.HandleFunc("/peers", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/peer", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			handlers.PostPeerHandler(w, r)
 		} else {
