@@ -2,15 +2,16 @@ package routes
 
 import (
 	"elysium-backend/internal/handlers"
-	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
-func SetupRoutes() *http.ServeMux {
-	mux := http.NewServeMux()
+func SetupRoutes() *mux.Router {
+	router := mux.NewRouter()
 
-	mux.HandleFunc("/", handlers.BaseHandler)
+	router.HandleFunc("/", handlers.BaseHandler)
 
-	PeerRoutes(mux)
+	PeerRoutes(router)
 
-	return mux
+	return router
 }

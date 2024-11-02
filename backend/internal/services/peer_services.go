@@ -18,13 +18,12 @@ func InsertPeer(newPeer *models.Peer) error {
 	return nil
 }
 
-func GetPeer(peerID *uuid.UUID) error {
-	test, err := repositories.GetPeer(*peerID)
+func GetPeer(peerID *uuid.UUID) (*models.Peer, error) {
+	peer, err := repositories.GetPeer(*peerID)
 
-	log.Println(test.AssignedIP)
 	if err != nil {
-		log.Printf("services.InsertPeer -> Error inserting peer : %v", err)
-		return err
+		log.Printf("services.GetPeer -> Error retrieving peer : %v", err)
+		return nil, err
 	}
-	return nil
+	return peer, nil
 }
