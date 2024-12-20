@@ -15,7 +15,7 @@ else
 fi
 
 cd containers
-$engine -f podman-compose.yml up -d
+sudo $engine -f podman-compose.yml up -d
 cd ..
 
 echo "Setup completed successfully."

@@ -7,19 +7,35 @@ read -p "Enter your choice (1 or 2): " choice
 
 if [ "$choice" == "1" ]; then
     engine="docker compose"
+    cli="docker"
 elif [ "$choice" == "2" ]; then
     engine="podman-compose"
+    cli="podman"
 else
     echo "Invalid choice. Defaulting to Podman Compose."
     engine="podman-compose"
+    cli="podman"
 fi
 
 cd containers
-$engine -f podman-compose.yml down
+sudo $engine -f podman-compose.yml down --volumes --remove-orphans
 cd ..
 
-if [ "$engine" == "podman-compose" ]; then
-    podman volume prune -f
+echo "Removing all containers..."
+sudo $cli rm -f $(sudo $cli ps -aq)
+
+echo "Removing all volumes..."
+sudo $cli volume rm -f $(sudo $cli volume ls -q)
+
+echo "Removing all images..."
+sudo $cli rmi -f $(sudo $cli images -q)
+
+echo "Removing all networks..."
+sudo $cli network rm $(sudo $cli network ls -q)
+
+if [ "$cli" == "docker" ]; then
+    echo "Cleaning up Docker build cache..."
+    sudo $cli builder prune -a -f
 fi
 
-echo "Teardown completed successfully."
+echo "Complete cleanup completed successfully."
