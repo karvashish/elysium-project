@@ -6,7 +6,7 @@ echo "2. Podman Compose"
 read -p "Enter your choice (1 or 2): " choice
 
 if [ "$choice" == "1" ]; then
-    engine="docker-compose"
+    engine="docker compose"
 elif [ "$choice" == "2" ]; then
     engine="podman-compose"
 else
@@ -15,7 +15,7 @@ else
 fi
 
 cd containers
-$engine up -d
+$engine -f podman-compose.yml up -d
 cd ..
 
 echo "Setup completed successfully."
