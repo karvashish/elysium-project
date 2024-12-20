@@ -9,13 +9,6 @@ services:
     ports:
       - "5432:5432"
 
-  redis:
-    image: redis:latest
-    volumes:
-      - redis_data:/data
-    ports:
-      - "6379:6379"
-
   pgadmin:
     image: dpage/pgadmin4:latest
     env_file:
@@ -25,30 +18,6 @@ services:
     depends_on:
       - postgres
 
-  redisinsight:
-    image: redis/redisinsight:latest
-    ports:
-      - "8001:5540"
-    depends_on:
-      - redis
-
-  vault:
-    image: hashicorp/vault:latest
-    environment:
-      VAULT_ADDR: "http://vault:8200"
-    volumes:
-      - vault_data:/vault/file                
-      - ./vault/config:/vault/config            
-    ports:
-      - "8200:8200"
-    cap_add:
-      - IPC_LOCK
-    command: "server" 
-
 volumes:
   postgres_data:
-    driver: local
-  redis_data:
-    driver: local
-  vault_data:
     driver: local
