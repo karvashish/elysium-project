@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"elysium-backend/internal/models"
 	"elysium-backend/internal/services"
 	"encoding/json"
 	"fmt"
@@ -33,9 +34,19 @@ func GetPeerHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostPeerHandler(w http.ResponseWriter, r *http.Request) {
-	exePath, err := services.CompileClient("abcd", "aarch64-unknown-linux-musl")
+
+	var peer_request *models.Peer_Request
+
+	decoder := json.NewDecoder(r.Body)
+
+	if err := decoder.Decode(&peer_request); err != nil {
+		http.Error(w, "Invalid Request", http.StatusBadRequest)
+		return
+	}
+
+	exePath, err := services.CompileClient(*peer_request.PublicKey, peer_request.OSArch)
 	if err != nil {
-		http.Error(w, "Compilation failed", http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Compilation failed: %s", err), http.StatusInternalServerError)
 		return
 	}
 

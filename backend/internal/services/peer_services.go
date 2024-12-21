@@ -1,6 +1,7 @@
 package services
 
 import (
+	"bufio"
 	"elysium-backend/config"
 	"elysium-backend/internal/models"
 	"elysium-backend/internal/repositories"
@@ -35,14 +36,8 @@ func GetPeer(peerID *uuid.UUID) (*models.Peer, error) {
 	return peer, nil
 }
 
-func CompileClient(secret string, target string) (string, error) {
-	validTargets := map[string]bool{
-		"x86_64-pc-windows-gnu":      true,
-		"x86_64-unknown-linux-musl":  true,
-		"aarch64-unknown-linux-musl": true,
-	}
-
-	if target == "" || !validTargets[target] {
+func CompileClient(pubKey string, target models.OSArch) (string, error) {
+	if err := target.Validate(); err != nil {
 		return "", fmt.Errorf("invalid target: %s", target)
 	}
 
@@ -55,16 +50,29 @@ func CompileClient(secret string, target string) (string, error) {
 
 	compileArgs := config.GetEnv("COMPILE_ARGS", "")
 	args := append([]string{"build", "--release"}, strings.Fields(compileArgs)...)
-	args = append(args, "--target", target)
+	args = append(args, "--target", string(target))
 
 	cmd := exec.Command("cargo", args...)
 	cmd.Dir = clientDir
 
-	cmd.Env = append(os.Environ(), fmt.Sprintf("SECRET=%s", secret))
+	cmd.Env = append(os.Environ(), fmt.Sprintf("SECRET=%s", pubKey))
 
-	err := cmd.Run()
+	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return "", fmt.Errorf("compilation error: %w", err)
+		return "", fmt.Errorf("failed to get stderr pipe: %w", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		return "", fmt.Errorf("failed to start command: %w", err)
+	}
+
+	scanner := bufio.NewScanner(stderr)
+	for scanner.Scan() {
+		fmt.Println(scanner.Text())
+	}
+
+	if err := cmd.Wait(); err != nil {
+		return "", fmt.Errorf("command execution failed: %w", err)
 	}
 
 	uniqueDir := filepath.Join(outputDir, fmt.Sprintf("%d", time.Now().UnixNano()))
@@ -72,7 +80,7 @@ func CompileClient(secret string, target string) (string, error) {
 		return "", fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	sourcePath := filepath.Join(clientDir, "target", target, "release", binaryName)
+	sourcePath := filepath.Join(clientDir, "target", string(target), "release", binaryName)
 	destPath := filepath.Join(uniqueDir, binaryName)
 
 	if err := os.Rename(sourcePath, destPath); err != nil {
