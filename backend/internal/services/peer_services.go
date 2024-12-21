@@ -35,13 +35,28 @@ func GetPeer(peerID *uuid.UUID) (*models.Peer, error) {
 	return peer, nil
 }
 
-func CompileClient(secret string) (string, error) {
+func CompileClient(secret string, target string) (string, error) {
+	validTargets := map[string]bool{
+		"x86_64-pc-windows-gnu":      true,
+		"x86_64-unknown-linux-musl":  true,
+		"aarch64-unknown-linux-musl": true,
+	}
+
+	if target == "" || !validTargets[target] {
+		return "", fmt.Errorf("invalid target: %s", target)
+	}
+
 	clientDir := config.GetEnv("CLIENT_DIR", "./client")
 	binaryName := config.GetEnv("BINARY_NAME", "elysium-client")
+	if target == "x86_64-pc-windows-gnu" {
+		binaryName += ".exe"
+	}
 	outputDir := config.GetEnv("OUTPUT_DIR", "./compiled_binaries")
 
 	compileArgs := config.GetEnv("COMPILE_ARGS", "")
 	args := append([]string{"build", "--release"}, strings.Fields(compileArgs)...)
+	args = append(args, "--target", target)
+
 	cmd := exec.Command("cargo", args...)
 	cmd.Dir = clientDir
 
@@ -57,7 +72,7 @@ func CompileClient(secret string) (string, error) {
 		return "", fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	sourcePath := filepath.Join(clientDir, "target", "release", binaryName)
+	sourcePath := filepath.Join(clientDir, "target", target, "release", binaryName)
 	destPath := filepath.Join(uniqueDir, binaryName)
 
 	if err := os.Rename(sourcePath, destPath); err != nil {

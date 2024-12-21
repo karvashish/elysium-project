@@ -33,7 +33,7 @@ func GetPeerHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostPeerHandler(w http.ResponseWriter, r *http.Request) {
-	exePath, err := services.CompileClient("abcd")
+	exePath, err := services.CompileClient("abcd", "aarch64-unknown-linux-musl")
 	if err != nil {
 		http.Error(w, "Compilation failed", http.StatusInternalServerError)
 		return

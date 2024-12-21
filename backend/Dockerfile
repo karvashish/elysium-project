@@ -12,7 +12,22 @@ FROM alpine:latest
 
 WORKDIR /root/
 
-RUN apk add --no-cache wireguard-tools cargo
+RUN apk add --no-cache \
+    build-base \
+    musl-dev \
+    rustup \
+    curl \
+    binutils \
+    gcc \
+    g++ && \
+    curl https://sh.rustup.rs -sSf | sh -s -- -y && \
+    source $HOME/.cargo/env && \
+    rustup install stable && \
+    rustup default stable && \
+    rustup target add x86_64-pc-windows-gnu x86_64-unknown-linux-musl aarch64-unknown-linux-musl && \
+    rm -rf /var/cache/apk/* /tmp/* /var/tmp/*
+
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 COPY --from=build /app/main .
 COPY backend/migrations ./migrations
