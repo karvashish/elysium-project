@@ -3,8 +3,8 @@
 
 ## Clone the Repository:
 
-git clone <repository-url>
-cd <repository-directory>
+git clone \<repository-url\>
+cd \<repository-directory\>
 
 ## Step 1: Verify Environment Configuration
 - **Description**: Check the `.env` file in the `project_root` directory.
