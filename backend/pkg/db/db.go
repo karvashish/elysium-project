@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"elysium-backend/config"
 	"fmt"
 	"log"
 	"os"
@@ -30,20 +31,13 @@ func InitializeDatabaseConnection() *pgxpool.Pool {
 }
 
 func constructDSN() string {
-	dbUser := getEnv("POSTGRES_USER", "")
-	dbPassword := getEnv("POSTGRES_PASSWORD", "")
-	dbName := getEnv("POSTGRES_DB", "")
-	dbHost := getEnv("DB_HOST", "localhost")
-	dbPort := getEnv("DB_PORT", "5432")
+	dbUser := config.GetEnv("POSTGRES_USER", "")
+	dbPassword := config.GetEnv("POSTGRES_PASSWORD", "")
+	dbName := config.GetEnv("POSTGRES_DB", "")
+	dbHost := config.GetEnv("DB_HOST", "localhost")
+	dbPort := config.GetEnv("DB_PORT", "5432")
 
 	return fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
-}
-
-func getEnv(key, defaultValue string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
-	}
-	return defaultValue
 }
 
 func CloseDatabaseConnection() {
