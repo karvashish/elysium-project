@@ -14,3 +14,8 @@ updates:
     directory: "/backend"
     schedule:
       interval: "daily"
+
+  - package-ecosystem: "docker"
+    directory: "/containers"
+    schedule:
+      interval: "daily"
