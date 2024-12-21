@@ -14,7 +14,7 @@ cd <repository-directory>
 
 ## Step 2: Initialize Services
 - **Description**: Run the setup script to start all required services in containers.
-- **Details**: This command will initialize containers for PostgreSQL, Redis, OpenSSL, and other dependencies as defined.
+- **Details**: This command will initialize containers for PostgreSQL, and other dependencies as defined.
 ```
 ./scripts/setup.cmd
 ```
