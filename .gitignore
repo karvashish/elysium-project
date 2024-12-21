@@ -2,11 +2,9 @@
 /backend/config/keys/*
 /client/target/
 /containers/postgresql/data/
-/containers/redis/data/
 *.log
 *.pid
 .vscode/*
 !.vscode/tasks.json
 .idea/
 *.swp
-vault_init_keys.txt
