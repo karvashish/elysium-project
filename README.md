@@ -3,7 +3,8 @@
 
 ## Clone the Repository:
 
-git clone \<repository-url\>
+git clone \<repository-url\> 
+
 cd \<repository-directory\>
 
 ## Step 1: Verify Environment Configuration
