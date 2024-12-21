@@ -9,3 +9,8 @@ updates:
     directory: "/client"
     schedule:
       interval: "daily"
+  
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    schedule:
+      interval: "daily"
