@@ -35,7 +35,7 @@ func GetPeer(peerID *uuid.UUID) (*models.Peer, error) {
 	return peer, nil
 }
 
-func CompileClient() (string, error) {
+func CompileClient(secret string) (string, error) {
 	clientDir := config.GetEnv("CLIENT_DIR", "./client")
 	binaryName := config.GetEnv("BINARY_NAME", "elysium-client")
 	outputDir := config.GetEnv("OUTPUT_DIR", "./compiled_binaries")
@@ -44,6 +44,8 @@ func CompileClient() (string, error) {
 	args := append([]string{"build", "--release"}, strings.Fields(compileArgs)...)
 	cmd := exec.Command("cargo", args...)
 	cmd.Dir = clientDir
+
+	cmd.Env = append(os.Environ(), fmt.Sprintf("SECRET=%s", secret))
 
 	err := cmd.Run()
 	if err != nil {
@@ -62,6 +64,9 @@ func CompileClient() (string, error) {
 		return "", fmt.Errorf("failed to move executable: %w", err)
 	}
 
-	relativePath := filepath.Join(uniqueDir[len(outputDir)+1:], binaryName)
+	relativePath, err := filepath.Rel(outputDir, filepath.Join(uniqueDir, binaryName))
+	if err != nil {
+		return "", fmt.Errorf("failed to calculate relative path: %w", err)
+	}
 	return relativePath, nil
 }

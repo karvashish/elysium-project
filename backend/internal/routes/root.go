@@ -13,5 +13,7 @@ func SetupRoutes() *mux.Router {
 
 	PeerRoutes(router)
 
+	DownloadRoutes(router)
+
 	return router
 }
