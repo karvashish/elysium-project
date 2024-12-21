@@ -3,9 +3,9 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/backend"
     schedule:
-      interval: "live"
+      interval: "daily"
 
   - package-ecosystem: "cargo"
     directory: "/client"
     schedule:
-      interval: "live"
+      interval: "daily"
