@@ -7,6 +7,7 @@ import (
 	"elysium-backend/internal/repositories"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,11 +19,24 @@ import (
 
 func InsertPeer(newPeer *models.Peer) error {
 
+	if newPeer.AssignedIP == nil {
+		fmt.Printf("IP not assigned, requesting new IP\n")
+		if err := assignNewIP(newPeer); err != nil {
+			log.Printf("services.InsertPeer -> Error assigning new IP: %v", err)
+			return err
+		}
+	}
+
 	if err := repositories.InsertPeer(newPeer); err != nil {
 		log.Printf("services.InsertPeer -> Error inserting peer : %v", err)
 		return err
 	}
 
+	return nil
+}
+
+func assignNewIP(newPeer *models.Peer) error {
+	newPeer.AssignedIP = net.ParseIP("10.0.0.2")
 	return nil
 }
 
@@ -52,7 +66,7 @@ func CompileClient(pubKey string, target models.OSArch) (string, error) {
 	args := append([]string{"build", "--release", "--target", string(target)}, compileArgs...)
 	cmd := exec.Command("cargo", args...)
 	cmd.Dir = clientDir
-	cmd.Env = append(os.Environ(), fmt.Sprintf("SECRET=%s", pubKey))
+	cmd.Env = append(os.Environ(), fmt.Sprintf("PUBKEY=%s", pubKey))
 	if target == models.OSArchx86_64Linux {
 		cmd.Env = append(cmd.Env, "RUSTFLAGS=-C linker=x86_64-linux-gnu-gcc")
 	}
