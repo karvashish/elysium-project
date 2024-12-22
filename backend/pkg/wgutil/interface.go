@@ -1,6 +1,7 @@
 package wgutil
 
 import (
+	"elysium-backend/config"
 	"elysium-backend/internal/models"
 	"elysium-backend/internal/services"
 	"log"
@@ -13,7 +14,9 @@ import (
 )
 
 func CreateWireGuardInterface(ifaceName string) error {
-	log.Println("wgutil.CreateWireGuardInterface -> called with ifaceName:", ifaceName)
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("wgutil.CreateWireGuardInterface -> called with ifaceName:", ifaceName)
+	}
 
 	link := &netlink.GenericLink{
 		LinkAttrs: netlink.LinkAttrs{
@@ -42,7 +45,9 @@ func CreateWireGuardInterface(ifaceName string) error {
 }
 
 func setIPAddress(ifaceName, ipAddress, ipMask string) error {
-	log.Println("wgutil.setIPAddress -> called with ifaceName:", ifaceName, "ipAddress:", ipAddress, "ipMask:", ipMask)
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("wgutil.setIPAddress -> called with ifaceName:", ifaceName, "ipAddress:", ipAddress, "ipMask:", ipMask)
+	}
 
 	link, err := netlink.LinkByName(ifaceName)
 	if err != nil {
@@ -66,7 +71,9 @@ func setIPAddress(ifaceName, ipAddress, ipMask string) error {
 }
 
 func InitWireGuardInterface(server_interface string, server_port int, server_IP net.IP, network_mask string) error {
-	log.Println("wgutil.InitWireGuardInterface -> called")
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("wgutil.InitWireGuardInterface -> called")
+	}
 
 	if err := CreateWireGuardInterface(server_interface); err != nil {
 		log.Println("wgutil.InitWireGuardInterface -> failed to create WireGuard interface:", err)

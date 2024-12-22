@@ -18,7 +18,9 @@ import (
 )
 
 func InsertPeer(newPeer *models.Peer) error {
-	log.Println("services.InsertPeer -> called")
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("services.InsertPeer -> called")
+	}
 
 	if newPeer.AssignedIP == nil {
 		log.Println("services.InsertPeer -> IP not assigned, requesting new IP")
@@ -37,13 +39,17 @@ func InsertPeer(newPeer *models.Peer) error {
 }
 
 func assignNewIP(newPeer *models.Peer) error {
-	log.Println("services.assignNewIP -> called")
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("services.assignNewIP -> called")
+	}
 	newPeer.AssignedIP = net.ParseIP("10.0.0.2")
 	return nil
 }
 
 func GetPeer(peerID *uuid.UUID) (*models.Peer, error) {
-	log.Println("services.GetPeer -> called")
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("services.GetPeer -> called")
+	}
 
 	peer, err := repositories.GetPeer(*peerID)
 	if err != nil {
@@ -54,7 +60,9 @@ func GetPeer(peerID *uuid.UUID) (*models.Peer, error) {
 }
 
 func CompileClient(pubKey string, target models.OSArch) (string, error) {
-	log.Println("services.CompileClient -> called")
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("services.CompileClient -> called")
+	}
 
 	if err := target.Validate(); err != nil {
 		log.Println("services.CompileClient -> invalid target:", err)

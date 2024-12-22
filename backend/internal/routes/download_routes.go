@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"elysium-backend/config"
 	"elysium-backend/internal/handlers"
 	"log"
 	"net/http"
@@ -9,7 +10,9 @@ import (
 )
 
 func DownloadRoutes(router *mux.Router) {
-	log.Println("routes.DownloadRoutes -> called")
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("routes.DownloadRoutes -> called")
+	}
 
 	router.HandleFunc("/downloads/{uniqueID}/{filename}", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("------------------------------------------------------------------------------")

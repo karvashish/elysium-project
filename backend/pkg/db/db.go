@@ -13,7 +13,9 @@ import (
 var DBPool *pgxpool.Pool
 
 func InitializeDatabaseConnection() *pgxpool.Pool {
-	log.Println("db.InitializeDatabaseConnection -> called")
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("db.InitializeDatabaseConnection -> called")
+	}
 
 	dsn := constructDSN()
 
@@ -32,7 +34,9 @@ func InitializeDatabaseConnection() *pgxpool.Pool {
 }
 
 func constructDSN() string {
-	log.Println("db.constructDSN -> called")
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("db.constructDSN -> called")
+	}
 
 	dbUser := config.GetEnv("POSTGRES_USER", "")
 	dbPassword := config.GetEnv("POSTGRES_PASSWORD", "")
@@ -44,7 +48,9 @@ func constructDSN() string {
 }
 
 func CloseDatabaseConnection() {
-	log.Println("db.CloseDatabaseConnection -> called")
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("db.CloseDatabaseConnection -> called")
+	}
 
 	if DBPool != nil {
 		DBPool.Close()
@@ -53,7 +59,9 @@ func CloseDatabaseConnection() {
 }
 
 func RunMigrations(migrationDir string) error {
-	log.Println("db.RunMigrations -> called with migrationDir:", migrationDir)
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("db.RunMigrations -> called with migrationDir:", migrationDir)
+	}
 
 	_, err := DBPool.Exec(context.Background(), `
 		CREATE TABLE IF NOT EXISTS migrations (

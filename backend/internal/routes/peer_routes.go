@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"elysium-backend/config"
 	"elysium-backend/internal/handlers"
 	"log"
 	"net/http"
@@ -9,7 +10,9 @@ import (
 )
 
 func PeerRoutes(mux *mux.Router) {
-	log.Println("routes.PeerRoutes -> called")
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("routes.PeerRoutes -> called")
+	}
 
 	mux.HandleFunc("/peer", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("------------------------------------------------------------------------------")

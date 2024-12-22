@@ -14,7 +14,9 @@ import (
 )
 
 func main() {
-	log.Println("main.main -> application started")
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("main.main -> application started")
+	}
 	setupConfig()
 	setupDatabase()
 	setupWireGuard()
@@ -22,7 +24,9 @@ func main() {
 }
 
 func setupConfig() {
-	log.Println("main.setupConfig -> called")
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("main.setupConfig -> called")
+	}
 	envFilePath := flag.String("env", "../.env", "Path to the env file")
 	flag.Parse()
 	config.LoadEnv(*envFilePath)
@@ -30,7 +34,9 @@ func setupConfig() {
 }
 
 func setupDatabase() {
-	log.Println("main.setupDatabase -> called")
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("main.setupDatabase -> called")
+	}
 	db.DBPool = db.InitializeDatabaseConnection()
 	migrationDir := config.GetEnv("MIGRATION_PATH", "migrations")
 
@@ -41,7 +47,9 @@ func setupDatabase() {
 }
 
 func setupWireGuard() {
-	log.Println("main.setupWireGuard -> called")
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("main.setupWireGuard -> called")
+	}
 	serverInterface := config.GetEnv("BACKEND_WG_INTERFACE", "wg0")
 	serverPort, err := strconv.Atoi(config.GetEnv("BACKEND_WG_PORT", "51820"))
 	if err != nil {
@@ -58,7 +66,9 @@ func setupWireGuard() {
 }
 
 func startServer() {
-	log.Println("main.startServer -> called")
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("main.startServer -> called")
+	}
 	port := ":" + config.GetEnv("PORT", "8080")
 	server := &http.Server{Addr: port, Handler: routes.SetupRoutes()}
 

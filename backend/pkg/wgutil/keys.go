@@ -1,6 +1,7 @@
 package wgutil
 
 import (
+	"elysium-backend/config"
 	"log"
 	"os"
 	"path/filepath"
@@ -9,7 +10,9 @@ import (
 )
 
 func GenerateKeys() (string, string, error) {
-	log.Println("wgutil.GenerateKeys -> called")
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("wgutil.GenerateKeys -> called")
+	}
 
 	privateKey, err := wgtypes.GeneratePrivateKey()
 	if err != nil {
@@ -24,7 +27,9 @@ func GenerateKeys() (string, string, error) {
 }
 
 func SaveKeyToFile(path, filename, key string) error {
-	log.Println("wgutil.SaveKeyToFile -> called with path:", path, "filename:", filename)
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("wgutil.SaveKeyToFile -> called with path:", path, "filename:", filename)
+	}
 
 	keyPath := filepath.Join(path, filename)
 
@@ -46,6 +51,8 @@ func SaveKeyToFile(path, filename, key string) error {
 		return err
 	}
 
-	log.Println("wgutil.SaveKeyToFile -> key saved successfully to:", keyPath)
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("wgutil.SaveKeyToFile -> key saved successfully to:", keyPath)
+	}
 	return nil
 }

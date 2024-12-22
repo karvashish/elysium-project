@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"elysium-backend/config"
 	"elysium-backend/internal/models"
 	"elysium-backend/pkg/db"
 	"log"
@@ -10,7 +11,9 @@ import (
 )
 
 func InsertPeer(peer *models.Peer) error {
-	log.Println("repositories.InsertPeer -> called")
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("repositories.InsertPeer -> called")
+	}
 
 	query := `
 		INSERT INTO peers (public_key, assigned_ip, status, is_gateway, created_on)
@@ -28,7 +31,9 @@ func InsertPeer(peer *models.Peer) error {
 }
 
 func GetPeer(id uuid.UUID) (*models.Peer, error) {
-	log.Println("repositories.GetPeer -> called")
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("repositories.GetPeer -> called")
+	}
 
 	query := `
 		SELECT id, public_key, assigned_ip, status, is_gateway, metadata, created_on
