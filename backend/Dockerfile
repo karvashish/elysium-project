@@ -8,7 +8,7 @@ RUN go mod download
 COPY backend/. . 
 RUN go build -o main .
 
-FROM rust:1.83.0 AS runtime
+FROM rust:1.83.0-slim AS runtime
 
 WORKDIR /root/
 
