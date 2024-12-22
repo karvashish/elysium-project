@@ -47,26 +47,19 @@ func CompileClient(pubKey string, target models.OSArch) (string, error) {
 		binaryName += ".exe"
 	}
 	outputDir := config.GetEnv("OUTPUT_DIR", "./compiled_binaries")
+	compileArgs := strings.Fields(config.GetEnv("COMPILE_ARGS", ""))
 
-	compileArgs := config.GetEnv("COMPILE_ARGS", "")
-	args := append([]string{"build", "--release"}, strings.Fields(compileArgs)...)
-	args = append(args, "--target", string(target))
-
+	args := append([]string{"build", "--release", "--target", string(target)}, compileArgs...)
 	cmd := exec.Command("cargo", args...)
 	cmd.Dir = clientDir
-
 	cmd.Env = append(os.Environ(), fmt.Sprintf("SECRET=%s", pubKey))
 	if target == models.OSArchx86_64Linux {
 		cmd.Env = append(cmd.Env, "RUSTFLAGS=-C linker=x86_64-linux-gnu-gcc")
 	}
 
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		return "", fmt.Errorf("failed to get stderr pipe: %w", err)
-	}
-
+	stderr, _ := cmd.StderrPipe()
 	if err := cmd.Start(); err != nil {
-		return "", fmt.Errorf("failed to start command: %w", err)
+		return "", fmt.Errorf("command start failed: %w", err)
 	}
 
 	scanner := bufio.NewScanner(stderr)
@@ -78,21 +71,16 @@ func CompileClient(pubKey string, target models.OSArch) (string, error) {
 		return "", fmt.Errorf("command execution failed: %w", err)
 	}
 
-	uniqueDir := filepath.Join(outputDir, fmt.Sprintf("%d", time.Now().UnixNano()))
-	if err := os.MkdirAll(uniqueDir, os.ModePerm); err != nil {
+	destPath := filepath.Join(outputDir, fmt.Sprintf("%d", time.Now().UnixNano()), binaryName)
+	if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
 		return "", fmt.Errorf("failed to create directory: %w", err)
 	}
 
 	sourcePath := filepath.Join(clientDir, "target", string(target), "release", binaryName)
-	destPath := filepath.Join(uniqueDir, binaryName)
-
 	if err := os.Rename(sourcePath, destPath); err != nil {
 		return "", fmt.Errorf("failed to move executable: %w", err)
 	}
 
-	relativePath, err := filepath.Rel(outputDir, filepath.Join(uniqueDir, binaryName))
-	if err != nil {
-		return "", fmt.Errorf("failed to calculate relative path: %w", err)
-	}
+	relativePath, _ := filepath.Rel(outputDir, destPath)
 	return relativePath, nil
 }
