@@ -8,3 +8,5 @@
 !.vscode/tasks.json
 .idea/
 *.swp
+
+target
