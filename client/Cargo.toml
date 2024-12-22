@@ -4,3 +4,9 @@ version = "0.1.0"
 edition = "2018" 
  
 [dependencies] 
+
+
+[profile.release]
+strip = "symbols"
+panic = "abort"
+codegen-units = 1
