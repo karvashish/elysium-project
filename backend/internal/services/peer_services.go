@@ -56,6 +56,9 @@ func CompileClient(pubKey string, target models.OSArch) (string, error) {
 	cmd.Dir = clientDir
 
 	cmd.Env = append(os.Environ(), fmt.Sprintf("SECRET=%s", pubKey))
+	if target == models.OSArchx86_64Linux {
+		cmd.Env = append(cmd.Env, "RUSTFLAGS=-C linker=x86_64-linux-gnu-gcc")
+	}
 
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
