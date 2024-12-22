@@ -1,6 +1,8 @@
 
 # Step-by-Step Guide
 
+**Note**: All scripts in scripts dir are meant to be run from project root
+
 ## Clone the Repository:
 
 git clone \<repository-url\> 
