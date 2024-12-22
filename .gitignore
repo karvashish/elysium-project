@@ -1,4 +1,4 @@
-/backend/bin/
+/backend/main
 /backend/config/keys/*
 /client/target/
 /containers/postgresql/data/

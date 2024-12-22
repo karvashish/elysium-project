@@ -14,20 +14,16 @@ import (
 )
 
 func main() {
-	setupConfig()
-	setupDatabase()
-	setupWireGuard()
-	startServer()
-}
 
-func setupConfig() {
-	if config.GetLogLevel() == "DEBUG" {
-		log.Println("main.setupConfig -> called")
-	}
 	envFilePath := flag.String("env", "../local.env", "Path to the env file")
+	setupWg := flag.Bool("setupWg", true, "Setup wireguard network")
 	flag.Parse()
 	config.LoadEnv(*envFilePath)
 	log.Println("main.setupConfig -> configuration loaded")
+
+	setupDatabase()
+	setupWireGuard(setupWg)
+	startServer()
 }
 
 func setupDatabase() {
@@ -43,9 +39,12 @@ func setupDatabase() {
 	log.Println("main.setupDatabase -> database setup complete")
 }
 
-func setupWireGuard() {
+func setupWireGuard(setupWg *bool) {
 	if config.GetLogLevel() == "DEBUG" {
 		log.Println("main.setupWireGuard -> called")
+	} else if !*setupWg {
+		log.Println("main.setupWireGuard -> Skipping wireguard interface setup")
+		return
 	}
 	serverInterface := config.GetEnv("BACKEND_WG_INTERFACE", "wg0")
 	serverPort, err := strconv.Atoi(config.GetEnv("BACKEND_WG_PORT", "51820"))
