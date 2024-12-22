@@ -3,7 +3,7 @@ package wgutil
 import (
 	"elysium-backend/internal/models"
 	"elysium-backend/internal/services"
-	"fmt"
+	"log"
 	"net"
 	"time"
 
@@ -13,6 +13,8 @@ import (
 )
 
 func CreateWireGuardInterface(ifaceName string) error {
+	log.Println("wgutil.CreateWireGuardInterface -> called with ifaceName:", ifaceName)
+
 	link := &netlink.GenericLink{
 		LinkAttrs: netlink.LinkAttrs{
 			Name: ifaceName,
@@ -20,59 +22,75 @@ func CreateWireGuardInterface(ifaceName string) error {
 		LinkType: "wireguard",
 	}
 	if err := netlink.LinkAdd(link); err != nil {
-		return fmt.Errorf("error creating WireGuard interface %s: %v", ifaceName, err)
+		log.Println("wgutil.CreateWireGuardInterface -> error creating WireGuard interface:", err)
+		return err
 	}
 
 	createdLink, err := netlink.LinkByName(ifaceName)
 	if err != nil {
-		return fmt.Errorf("error retrieving interface %s after creation: %v", ifaceName, err)
+		log.Println("wgutil.CreateWireGuardInterface -> error retrieving interface after creation:", err)
+		return err
 	}
 
 	if err := netlink.LinkSetUp(createdLink); err != nil {
-		return fmt.Errorf("error setting interface %s up: %v", ifaceName, err)
+		log.Println("wgutil.CreateWireGuardInterface -> error setting interface up:", err)
+		return err
 	}
 
+	log.Println("wgutil.CreateWireGuardInterface -> successfully created and set up interface:", ifaceName)
 	return nil
 }
 
 func setIPAddress(ifaceName, ipAddress, ipMask string) error {
+	log.Println("wgutil.setIPAddress -> called with ifaceName:", ifaceName, "ipAddress:", ipAddress, "ipMask:", ipMask)
+
 	link, err := netlink.LinkByName(ifaceName)
 	if err != nil {
-		return fmt.Errorf("error retrieving link for %s: %v", ifaceName, err)
+		log.Println("wgutil.setIPAddress -> error retrieving link:", err)
+		return err
 	}
 
 	addr, err := netlink.ParseAddr(ipAddress + ipMask)
 	if err != nil {
-		return fmt.Errorf("error parsing IP address %s%s: %v", ipAddress, ipMask, err)
+		log.Println("wgutil.setIPAddress -> error parsing IP address:", err)
+		return err
 	}
 
 	if err := netlink.AddrAdd(link, addr); err != nil {
-		return fmt.Errorf("error adding IP address %s%s to %s: %v", ipAddress, ipMask, ifaceName, err)
+		log.Println("wgutil.setIPAddress -> error adding IP address:", err)
+		return err
 	}
 
+	log.Println("wgutil.setIPAddress -> successfully set IP address:", ipAddress+ipMask)
 	return nil
 }
 
 func InitWireGuardInterface(server_interface string, server_port int, server_IP net.IP, network_mask string) error {
+	log.Println("wgutil.InitWireGuardInterface -> called")
+
 	if err := CreateWireGuardInterface(server_interface); err != nil {
-		return fmt.Errorf("failed to create WireGuard interface: %v", err)
+		log.Println("wgutil.InitWireGuardInterface -> failed to create WireGuard interface:", err)
+		return err
 	}
 
 	client, err := wgctrl.New()
 	if err != nil {
-		return fmt.Errorf("error initializing WireGuard client: %v", err)
+		log.Println("wgutil.InitWireGuardInterface -> error initializing WireGuard client:", err)
+		return err
 	}
 	defer client.Close()
 
 	privKey, pubKey, err := GenerateKeys()
 	if err != nil {
-		return fmt.Errorf("error generating keys: %v", err)
+		log.Println("wgutil.InitWireGuardInterface -> error generating keys:", err)
+		return err
 	}
 	SaveKeyToFile("config/keys/", "server_private.key", privKey)
 
 	privateKey, err := wgtypes.ParseKey(privKey)
 	if err != nil {
-		return fmt.Errorf("error parsing private key: %v", err)
+		log.Println("wgutil.InitWireGuardInterface -> error parsing private key:", err)
+		return err
 	}
 
 	config := wgtypes.Config{
@@ -81,11 +99,13 @@ func InitWireGuardInterface(server_interface string, server_port int, server_IP 
 	}
 
 	if err := client.ConfigureDevice(server_interface, config); err != nil {
-		return fmt.Errorf("error configuring WireGuard interface %s: %v", server_interface, err)
+		log.Println("wgutil.InitWireGuardInterface -> error configuring WireGuard interface:", err)
+		return err
 	}
 
 	if err := setIPAddress(server_interface, server_IP.String(), network_mask); err != nil {
-		return fmt.Errorf("error setting IP address for interface %s: %v", server_interface, err)
+		log.Println("wgutil.InitWireGuardInterface -> error setting IP address for interface:", err)
+		return err
 	}
 
 	backend_server := models.Peer{
@@ -97,8 +117,10 @@ func InitWireGuardInterface(server_interface string, server_port int, server_IP 
 	}
 
 	if err := services.InsertPeer(&backend_server); err != nil {
-		return fmt.Errorf("error saving backend server in peer table %v", err)
+		log.Println("wgutil.InitWireGuardInterface -> error saving backend server in peer table:", err)
+		return err
 	}
 
+	log.Println("wgutil.InitWireGuardInterface -> successfully initialized WireGuard interface:", server_interface)
 	return nil
 }

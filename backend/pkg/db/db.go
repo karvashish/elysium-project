@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"elysium-backend/config"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -14,40 +13,48 @@ import (
 var DBPool *pgxpool.Pool
 
 func InitializeDatabaseConnection() *pgxpool.Pool {
+	log.Println("db.InitializeDatabaseConnection -> called")
+
 	dsn := constructDSN()
 
 	poolConfig, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
-		log.Fatalf("error parsing database connection string: %v", err)
+		log.Fatalf("db.InitializeDatabaseConnection -> error parsing database connection string: %v", err)
 	}
 
 	dbPool, err := pgxpool.ConnectConfig(context.Background(), poolConfig)
 	if err != nil {
-		log.Fatalf("error connecting to the database: %v", err)
+		log.Fatalf("db.InitializeDatabaseConnection -> error connecting to the database: %v", err)
 	}
 
-	log.Println("Successfully connected to PostgreSQL database")
+	log.Println("db.InitializeDatabaseConnection -> Successfully connected to PostgreSQL database")
 	return dbPool
 }
 
 func constructDSN() string {
+	log.Println("db.constructDSN -> called")
+
 	dbUser := config.GetEnv("POSTGRES_USER", "")
 	dbPassword := config.GetEnv("POSTGRES_PASSWORD", "")
 	dbName := config.GetEnv("POSTGRES_DB", "")
 	dbHost := config.GetEnv("DB_HOST", "localhost")
 	dbPort := config.GetEnv("DB_PORT", "5432")
 
-	return fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
+	return "postgresql://" + dbUser + ":" + dbPassword + "@" + dbHost + ":" + dbPort + "/" + dbName
 }
 
 func CloseDatabaseConnection() {
+	log.Println("db.CloseDatabaseConnection -> called")
+
 	if DBPool != nil {
 		DBPool.Close()
-		log.Println("Database connection closed successfully")
+		log.Println("db.CloseDatabaseConnection -> Database connection closed successfully")
 	}
 }
 
 func RunMigrations(migrationDir string) error {
+	log.Println("db.RunMigrations -> called with migrationDir:", migrationDir)
+
 	_, err := DBPool.Exec(context.Background(), `
 		CREATE TABLE IF NOT EXISTS migrations (
 			id SERIAL PRIMARY KEY,
@@ -56,12 +63,14 @@ func RunMigrations(migrationDir string) error {
 		)
 	`)
 	if err != nil {
-		return fmt.Errorf("error creating migrations table: %v", err)
+		log.Println("db.RunMigrations -> error creating migrations table:", err)
+		return err
 	}
 
 	files, err := os.ReadDir(migrationDir)
 	if err != nil {
-		return fmt.Errorf("error reading migration directory %s: %v", migrationDir, err)
+		log.Println("db.RunMigrations -> error reading migration directory:", err)
+		return err
 	}
 
 	for _, file := range files {
@@ -73,33 +82,37 @@ func RunMigrations(migrationDir string) error {
 				)
 			`, file.Name()).Scan(&exists)
 			if err != nil {
-				return fmt.Errorf("error checking migration status for %s: %v", file.Name(), err)
+				log.Println("db.RunMigrations -> error checking migration status for", file.Name(), ":", err)
+				return err
 			}
 
 			if exists {
-				log.Printf("Skipping already applied migration: %s", file.Name())
+				log.Println("db.RunMigrations -> Skipping already applied migration:", file.Name())
 				continue
 			}
 
 			filePath := filepath.Join(migrationDir, file.Name())
 			query, err := os.ReadFile(filePath)
 			if err != nil {
-				return fmt.Errorf("error reading migration file %s: %v", filePath, err)
+				log.Println("db.RunMigrations -> error reading migration file:", filePath, ":", err)
+				return err
 			}
 
 			_, err = DBPool.Exec(context.Background(), string(query))
 			if err != nil {
-				return fmt.Errorf("error applying migration %s: %v", file.Name(), err)
+				log.Println("db.RunMigrations -> error applying migration", file.Name(), ":", err)
+				return err
 			}
 
 			_, err = DBPool.Exec(context.Background(), `
 				INSERT INTO migrations (filename) VALUES ($1)
 			`, file.Name())
 			if err != nil {
-				return fmt.Errorf("error recording applied migration %s: %v", file.Name(), err)
+				log.Println("db.RunMigrations -> error recording applied migration", file.Name(), ":", err)
+				return err
 			}
 
-			log.Printf("Migration applied successfully: %s", file.Name())
+			log.Println("db.RunMigrations -> Migration applied successfully:", file.Name())
 		}
 	}
 	return nil

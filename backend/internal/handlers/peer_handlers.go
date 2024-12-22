@@ -4,7 +4,7 @@ import (
 	"elysium-backend/internal/models"
 	"elysium-backend/internal/services"
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -13,6 +13,8 @@ import (
 )
 
 func GetPeerHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("handlers.GetPeerHandler  -> Processing request from", r.RemoteAddr)
+
 	vars := mux.Vars(r)
 
 	id, err := uuid.Parse(vars["id"])
@@ -35,7 +37,7 @@ func GetPeerHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostPeerHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("Processing request from %s\n", r.RemoteAddr)
+	log.Println("handlers.PostPeerHandler -> Processing request from", r.RemoteAddr)
 
 	var peer_request *models.Peer_Request
 
@@ -47,16 +49,16 @@ func PostPeerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if peer_request.PublicKey == nil || *peer_request.PublicKey == "" {
-		fmt.Printf("PublicKey was not provided by %s\n", r.RemoteAddr)
+		log.Println("handlers.PostPeerHandler -> PublicKey was not provided by", r.RemoteAddr)
 		empty_str := ""
 		peer_request.PublicKey = &empty_str
 	} else {
-		fmt.Printf("Received PublicKey from %s\n", r.RemoteAddr)
+		log.Println("handlers.PostPeerHandler -> Received PublicKey from", r.RemoteAddr)
 	}
 
 	exePath, err := services.CompileClient(*peer_request.PublicKey, peer_request.OSArch)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Compilation failed: %s", err), http.StatusInternalServerError)
+		http.Error(w, "Compilation failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -69,10 +71,11 @@ func PostPeerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := services.InsertPeer(&new_peer); err != nil {
-		fmt.Printf("Error Inserting peer %s\n", err)
+		http.Error(w, "Error creating peer", http.StatusInternalServerError)
+		return
 	}
 
-	relativeDownloadLink := fmt.Sprintf("/downloads/%s", exePath)
+	relativeDownloadLink := "/downloads/" + exePath
 
 	response := map[string]string{"download_link": relativeDownloadLink}
 	json.NewEncoder(w).Encode(response)

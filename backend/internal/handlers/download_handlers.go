@@ -13,7 +13,7 @@ func DownloadHandler(w http.ResponseWriter, r *http.Request, uniqueID, filename 
 
 	realPath := filepath.Join(baseDir, uniqueID, filename)
 
-	log.Printf("Serving file: %s", realPath)
+	log.Println("handlers.DownloadHandler -> Serving file:", realPath)
 
 	info, err := os.Stat(realPath)
 	if os.IsNotExist(err) || info.IsDir() {

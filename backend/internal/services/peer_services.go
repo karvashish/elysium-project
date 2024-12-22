@@ -18,17 +18,18 @@ import (
 )
 
 func InsertPeer(newPeer *models.Peer) error {
+	log.Println("services.InsertPeer -> called")
 
 	if newPeer.AssignedIP == nil {
-		fmt.Printf("IP not assigned, requesting new IP\n")
+		log.Println("services.InsertPeer -> IP not assigned, requesting new IP")
 		if err := assignNewIP(newPeer); err != nil {
-			log.Printf("services.InsertPeer -> Error assigning new IP: %v", err)
+			log.Println("services.InsertPeer -> Error assigning new IP:", err)
 			return err
 		}
 	}
 
 	if err := repositories.InsertPeer(newPeer); err != nil {
-		log.Printf("services.InsertPeer -> Error inserting peer : %v", err)
+		log.Println("services.InsertPeer -> Error inserting peer:", err)
 		return err
 	}
 
@@ -36,23 +37,28 @@ func InsertPeer(newPeer *models.Peer) error {
 }
 
 func assignNewIP(newPeer *models.Peer) error {
+	log.Println("services.assignNewIP -> called")
 	newPeer.AssignedIP = net.ParseIP("10.0.0.2")
 	return nil
 }
 
 func GetPeer(peerID *uuid.UUID) (*models.Peer, error) {
-	peer, err := repositories.GetPeer(*peerID)
+	log.Println("services.GetPeer -> called")
 
+	peer, err := repositories.GetPeer(*peerID)
 	if err != nil {
-		log.Printf("services.GetPeer -> Error retrieving peer : %v", err)
+		log.Println("services.GetPeer -> Error retrieving peer:", err)
 		return nil, err
 	}
 	return peer, nil
 }
 
 func CompileClient(pubKey string, target models.OSArch) (string, error) {
+	log.Println("services.CompileClient -> called")
+
 	if err := target.Validate(); err != nil {
-		return "", fmt.Errorf("invalid target: %s", target)
+		log.Println("services.CompileClient -> invalid target:", err)
+		return "", err
 	}
 
 	clientDir := config.GetEnv("CLIENT_DIR", "./client")
@@ -66,33 +72,37 @@ func CompileClient(pubKey string, target models.OSArch) (string, error) {
 	args := append([]string{"build", "--release", "--target", string(target)}, compileArgs...)
 	cmd := exec.Command("cargo", args...)
 	cmd.Dir = clientDir
-	cmd.Env = append(os.Environ(), fmt.Sprintf("PUBKEY=%s", pubKey))
+	cmd.Env = append(os.Environ(), "PUBKEY="+pubKey)
 	if target == models.OSArchx86_64Linux {
 		cmd.Env = append(cmd.Env, "RUSTFLAGS=-C linker=x86_64-linux-gnu-gcc")
 	}
 
 	stderr, _ := cmd.StderrPipe()
 	if err := cmd.Start(); err != nil {
-		return "", fmt.Errorf("command start failed: %w", err)
+		log.Println("services.CompileClient -> command start failed:", err)
+		return "", err
 	}
 
 	scanner := bufio.NewScanner(stderr)
 	for scanner.Scan() {
-		fmt.Println(scanner.Text())
+		log.Println("services.CompileClient -> build output:", scanner.Text())
 	}
 
 	if err := cmd.Wait(); err != nil {
-		return "", fmt.Errorf("command execution failed: %w", err)
+		log.Println("services.CompileClient -> command execution failed:", err)
+		return "", err
 	}
 
 	destPath := filepath.Join(outputDir, fmt.Sprintf("%d", time.Now().UnixNano()), binaryName)
 	if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
-		return "", fmt.Errorf("failed to create directory: %w", err)
+		log.Println("services.CompileClient -> failed to create directory:", err)
+		return "", err
 	}
 
 	sourcePath := filepath.Join(clientDir, "target", string(target), "release", binaryName)
 	if err := os.Rename(sourcePath, destPath); err != nil {
-		return "", fmt.Errorf("failed to move executable: %w", err)
+		log.Println("services.CompileClient -> failed to move executable:", err)
+		return "", err
 	}
 
 	relativePath, _ := filepath.Rel(outputDir, destPath)
