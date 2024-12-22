@@ -14,9 +14,6 @@ import (
 )
 
 func main() {
-	if config.GetLogLevel() == "DEBUG" {
-		log.Println("main.main -> application started")
-	}
 	setupConfig()
 	setupDatabase()
 	setupWireGuard()
@@ -27,7 +24,7 @@ func setupConfig() {
 	if config.GetLogLevel() == "DEBUG" {
 		log.Println("main.setupConfig -> called")
 	}
-	envFilePath := flag.String("env", "../.env", "Path to the env file")
+	envFilePath := flag.String("env", "../local.env", "Path to the env file")
 	flag.Parse()
 	config.LoadEnv(*envFilePath)
 	log.Println("main.setupConfig -> configuration loaded")

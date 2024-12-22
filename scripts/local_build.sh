@@ -33,7 +33,7 @@ echo -ne "\rGo application building: Done\n"
 echo "Copying compiled binary and necessary files to the target directory..."
 cp ./target/backend/main ./target/
 cp -r backend/migrations ./target/migrations/
-cp .env ./target/.env
+cp local.env ./target/local.env
 cp -r client ./target/client/
 echo "Files copied to the target directory."
 
