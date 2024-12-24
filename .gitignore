@@ -5,6 +5,7 @@
 *.log
 *.pid
 .vscode/*
+.vs
 !.vscode/tasks.json
 .idea/
 *.swp
