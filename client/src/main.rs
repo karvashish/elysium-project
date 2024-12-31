@@ -1,38 +1,56 @@
 use std::net::Ipv4Addr;
 
 mod interface;
+mod wg_common;
+
+use wg_common::{
+    wg_common::{gen_private_key, gen_public_key},
+    wireguard_cffi::WgKeyBase64String,
+};
 
 #[tokio::main]
 async fn main() {
     println!("Starting Elysium Project Client setup");
 
+    const IFCNAME: &str = env!("IFCNAME");
+    const ADDR: &str = env!("ADDR");
+    const CIDR: &str = env!("CIDR");
+
     let pub_key = option_env!("PUBKEY");
     if let Some(key) = pub_key {
         println!("PUBKEY: {}", key);
     } else {
-        eprintln!("PUBKEY is not set");
+        println!("PUBKEY is not set");
     }
 
-    let ifc_name = option_env!("IFCNAME").unwrap_or("wg0");
+    let addr = ADDR
+        .parse::<Ipv4Addr>()
+        .expect("Invalid IPv4 address in ADDR");
+    let cidr = CIDR.parse::<u8>().expect("Invalid CIDR value in CIDR");
 
-    let addr = option_env!("ADDR").and_then(|addr| addr.parse::<Ipv4Addr>().ok());
-    let cidr = option_env!("CIDR").and_then(|cidr| cidr.parse::<u8>().ok());
+    println!("Interface Name: {}", IFCNAME);
+    println!("Address: {}/{}", addr, cidr);
 
-    let (addr, cidr) = match (addr, cidr) {
-        (Some(a), Some(c)) => (a, c),
-        _ => {
-            eprintln!("Error: Both ADDR and CIDR must be set");
-            std::process::exit(1);
-        }
-    };
+    let private_key: WgKeyBase64String = gen_private_key();
+    let public_key: WgKeyBase64String = gen_public_key(&private_key);
+
+    print!("New Priv key: {:?}\n", private_key);
+    print!("New Public key: {:?}\n", public_key);
 
     match (
-        interface::create_wireguard_ifc(ifc_name).await,
-        interface::update_and_enable_ifc(ifc_name, addr, cidr).await,
+        interface::create_wireguard_ifc(IFCNAME).await,
+        interface::update_wireguard_ifc(
+            IFCNAME,
+            Some(addr),
+            Some(cidr),
+            interface::Operation::Update,
+        )
+        .await,
+        interface::update_wireguard_ifc(IFCNAME, None, None, interface::Operation::Enable).await,
     ) {
-        (Ok(()), Ok(())) => println!("Interface setup completed successfully"),
-        (Err(e1), Ok(())) => eprintln!("Interface creation failed: {}", e1),
-        (Ok(()), Err(e2)) => eprintln!("Interface enabling failed: {}", e2),
-        (Err(e1), Err(e2)) => eprintln!("Both creation and enabling failed: {}, {}", e1, e2),
+        (Ok(()), Ok(()), Ok(())) => println!("Interface setup completed successfully"),
+        (Err(e1), _, _) => eprintln!("Interface creation failed: {}", e1),
+        (Ok(()), Err(e2), _) => eprintln!("Interface update failed: {}", e2),
+        (Ok(()), _, Err(e3)) => eprintln!("Interface enabling failed: {}", e3),
     }
 }
