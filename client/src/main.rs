@@ -8,15 +8,16 @@ use wg_common::{
     wireguard_cffi::WgKeyBase64String,
 };
 
+use interface::{create_wireguard_ifc, update_wireguard_ifc, Operation};
 
-// The main function serves as the entry point for setting up the Elysium Project Client. 
+// The main function serves as the entry point for setting up the Elysium Project Client.
 // It performs the following tasks:
 // 1. Retrieves and validates compile-time constants embedded via the build script:
 //    - IFCNAME: The name of the WireGuard interface.
 //    - ADDR: The IPv4 address assigned to the interface.
 //    - CIDR: The subnet mask associated with the address.
 //    - PUBKEY: An optional public key, if provided during the build process.
-// 2. Parses and ensures the validity of the ADDR and CIDR values. These are required to configure 
+// 2. Parses and ensures the validity of the ADDR and CIDR values. These are required to configure
 //    the WireGuard interface properly.
 // 3. Logs the retrieved and validated values to provide feedback about the configuration being used.
 // 4. Generates a new private and public key pair for WireGuard using cryptographic utilities.
@@ -51,17 +52,16 @@ async fn main() {
     print!("New Public key: {:?}\n", public_key);
 
     match (
-        interface::create_wireguard_ifc(IFCNAME).await,
-        interface::update_wireguard_ifc(
+        create_wireguard_ifc(IFCNAME).await,
+        update_wireguard_ifc(
             IFCNAME,
             Some(addr),
             Some(cidr),
-            interface::Operation::Update,
+            Operation::Update,
         )
         .await,
-
         //TODO: Configure wireguard device
-        interface::update_wireguard_ifc(IFCNAME, None, None, interface::Operation::Enable).await,
+        update_wireguard_ifc(IFCNAME, None, None, Operation::Enable).await,
     ) {
         (Ok(()), Ok(()), Ok(())) => println!("Interface setup completed successfully"),
         (Err(e1), _, _) => eprintln!("Interface creation failed: {}", e1),
