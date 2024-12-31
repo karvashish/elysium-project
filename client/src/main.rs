@@ -59,6 +59,8 @@ async fn main() {
             interface::Operation::Update,
         )
         .await,
+
+        //TODO: Configure wireguard device
         interface::update_wireguard_ifc(IFCNAME, None, None, interface::Operation::Enable).await,
     ) {
         (Ok(()), Ok(()), Ok(())) => println!("Interface setup completed successfully"),
