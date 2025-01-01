@@ -6,8 +6,8 @@ use crate::wg_common::wireguard_cffi::{
 use std::ffi::CStr;
 
 pub fn gen_private_key() -> WgKeyBase64String {
-    let mut private_key_int: WgKey = WgKey::new([0; 32]);
-    let mut private_key: WgKeyBase64String = WgKeyBase64String::new([b' ' as u8; 45]);
+    let mut private_key_int= WgKey([0; 32]);
+    let mut private_key = WgKeyBase64String([b' ' as u8; 45]);
 
     unsafe {
         wg_generate_private_key(&mut private_key_int as *mut WgKey);
@@ -20,9 +20,9 @@ pub fn gen_private_key() -> WgKeyBase64String {
 }
 
 pub fn gen_public_key(private_key: &WgKeyBase64String) -> WgKeyBase64String {
-    let mut private_key_int: WgKey = WgKey::new([0; 32]);
-    let mut public_key_int: WgKey = WgKey::new([0; 32]);
-    let mut public_key: WgKeyBase64String = WgKeyBase64String::new([b' ' as u8; 45]);
+    let mut private_key_int = WgKey([0; 32]);
+    let mut public_key_int = WgKey([0; 32]);
+    let mut public_key = WgKeyBase64String([b' ' as u8; 45]);
 
     unsafe {
         wg_key_from_base64(&mut private_key_int as *mut WgKey, private_key);
