@@ -1,7 +1,9 @@
 use crate::wg_common::wireguard_cffi::{
-    wg_generate_private_key, wg_generate_public_key, wg_key_from_base64, wg_key_to_base64, WgKey,
+    wg_generate_private_key, wg_generate_public_key, wg_key_from_base64, wg_key_to_base64, wg_list_device_names, WgKey,
     WgKeyBase64String,
 };
+
+use std::ffi::CStr;
 
 pub fn gen_private_key() -> WgKeyBase64String {
     let mut private_key_int: WgKey = WgKey::new([0; 32]);
@@ -34,4 +36,28 @@ pub fn gen_public_key(private_key: &WgKeyBase64String) -> WgKeyBase64String {
         );
     }
     return public_key;
+}
+
+pub fn list_device_names() -> Vec<String> {
+    let mut result = Vec::new();
+    let mut offset = 0;
+
+    unsafe {
+        let ptr = wg_list_device_names();
+        if ptr.is_null() {
+            return Vec::new();
+        }
+
+        loop {
+            let c_str = CStr::from_ptr(ptr.add(offset));
+            let slice = c_str.to_bytes_with_nul();
+            if slice.is_empty() || slice == [0] {
+                break;
+            }
+
+            result.push(String::from_utf8_lossy(slice).trim_end_matches('\0').to_string());
+            offset += slice.len();
+        }
+    }
+    return result;
 }

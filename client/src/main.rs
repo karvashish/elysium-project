@@ -4,7 +4,7 @@ mod interface;
 mod wg_common;
 
 use wg_common::{
-    wg_common::{gen_private_key, gen_public_key},
+    wg_common::{gen_private_key, gen_public_key, list_device_names},
     wireguard_cffi::WgKeyBase64String,
 };
 
@@ -53,13 +53,7 @@ async fn main() {
 
     match (
         create_wireguard_ifc(IFCNAME).await,
-        update_wireguard_ifc(
-            IFCNAME,
-            Some(addr),
-            Some(cidr),
-            Operation::Update,
-        )
-        .await,
+        update_wireguard_ifc(IFCNAME, Some(addr), Some(cidr), Operation::Update).await,
         //TODO: Configure wireguard device
         update_wireguard_ifc(IFCNAME, None, None, Operation::Enable).await,
     ) {
@@ -68,4 +62,6 @@ async fn main() {
         (Ok(()), Err(e2), _) => eprintln!("Interface update failed: {}", e2),
         (Ok(()), _, Err(e3)) => eprintln!("Interface enabling failed: {}", e3),
     }
+
+    println!("--------------{}", list_device_names().join(", "));
 }

@@ -7,6 +7,7 @@ edition = "2021"
 rtnetlink = "0.14.1"
 tokio = { version = "1.42.0", features = ["full"] }
 futures-util = "0.3.31"
+bitflags = "2.0"
 
 
 [profile.release]
