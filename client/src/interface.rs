@@ -9,7 +9,7 @@ pub enum Operation {
 
 pub async fn create_wireguard_ifc(name: &str) -> Result<(), String> {
     let (connection, handle, _) =
-        new_connection().map_err(|e| format!("Connection setup failed: {e}"))?;
+    new_connection().map_err(|e| format!("Connection setup failed: {e}"))?;
     tokio::spawn(connection);
 
     handle
@@ -37,14 +37,14 @@ pub async fn update_wireguard_ifc(
     op: Operation,
 ) -> Result<(), String> {
     let (connection, handle, _) =
-        new_connection().map_err(|e| format!("Connection setup failed: {e}"))?;
+    new_connection().map_err(|e| format!("Connection setup failed: {e}"))?;
     tokio::spawn(connection);
 
     let mut links = handle.link().get().match_name(name.to_string()).execute();
     if let Some(link) = links
         .try_next()
         .map_err(|e| format!("Error retrieving link {name}: {e}"))
-        .await?
+    .await?
     {
         match op {
             Operation::Update => {
@@ -54,7 +54,7 @@ pub async fn update_wireguard_ifc(
                         .add(link.header.index, std::net::IpAddr::V4(addr), cidr)
                         .execute()
                         .map_err(|e| format!("Error adding address to {name}: {e}"))
-                        .await?
+                    .await?
                 } else {
                     return Err("Address and CIDR must be provided for Operation::Update".into());
                 }
@@ -67,7 +67,7 @@ pub async fn update_wireguard_ifc(
                     .up()
                     .execute()
                     .map_err(|e| format!("Error bringing interface {name} up: {e}"))
-                    .await?
+                .await?
             }
         }
 
