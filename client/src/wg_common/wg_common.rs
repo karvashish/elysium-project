@@ -3,7 +3,9 @@ use crate::wg_common::wireguard_cffi::{
     WgKeyBase64String,
 };
 
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
+
+use super::wireguard_cffi::{wg_get_device, WgDevice};
 
 pub fn gen_private_key() -> WgKeyBase64String {
     let mut private_key_int= WgKey([0; 32]);
@@ -60,4 +62,18 @@ pub fn list_device_names() -> Vec<String> {
         }
     }
     return result;
+}
+
+pub fn get_device(device_name: &str, device: &mut *mut WgDevice) -> Result<(), i32> {
+    let c_device_name = CString::new(device_name)
+        .map_err(|_| -1)?;
+
+    unsafe {
+        let result = wg_get_device(device, c_device_name.as_ptr());
+        if result == 0 {
+            Ok(())
+        } else {
+            Err(result)
+        }
+    }
 }

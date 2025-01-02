@@ -4,8 +4,8 @@ mod interface;
 mod wg_common;
 
 use wg_common::{
-    wg_common::{gen_private_key, gen_public_key, list_device_names},
-    wireguard_cffi::WgKeyBase64String,
+    wg_common::{gen_private_key, gen_public_key, get_device, list_device_names},
+    wireguard_cffi::{WgDevice, WgKeyBase64String},
 };
 
 use interface::{create_wireguard_ifc, update_wireguard_ifc, Operation};
@@ -64,4 +64,12 @@ async fn main() {
     }
 
     println!("--------------{}", list_device_names().join(", "));
+
+
+    let mut device: *mut WgDevice = std::ptr::null_mut();
+
+    match get_device(IFCNAME, &mut device) {
+        Ok(_) => println!("Successfully fetched device."),
+        Err(err) => eprintln!("Error fetching device: {}", err),
+    }
 }
