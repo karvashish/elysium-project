@@ -1,8 +1,6 @@
-
 use std::path::Path;
 use std::process::Command;
 use std::{env, process};
-
 
 /*
 This build script performs the following tasks:
@@ -16,15 +14,18 @@ This build script performs the following tasks:
 7. Compiles a C source file (`wireguard.c`) into a static library (`libwireguard.a`) using GCC, and links it with the Rust code.
 8. Informs Cargo to link the generated static library and sets up the required linker search paths.
 9. Ensures that changes to the `src/wireguard/wireguard.c` file trigger a rebuild.
-
-This script is critical for embedding runtime configuration into the binary and building the native C library required for the project.
+10. Adds logic to set default environment variables when building in debug mode but requires these variables in release mode.**
 */
+
 fn main() {
+    let is_release = env::var("PROFILE").unwrap_or_default() == "release";
+
     for var in ["CLIENTPUB", "IFCNAME", "ADDR", "CIDR", "SERVERPUB", "SERVERENDPOINT", "SERVERIP"] {
         println!("cargo:rerun-if-env-changed={}", var);
     }
 
     let required_vars = ["ADDR", "CIDR", "SERVERPUB", "SERVERENDPOINT", "SERVERIP"];
+
     let mut missing_vars = vec![];
 
     for var in &required_vars {
@@ -33,9 +34,27 @@ fn main() {
         }
     }
 
-    if !missing_vars.is_empty() {
-        eprintln!("Error: Missing mandatory environment variables: {:?}", missing_vars);
-        process::exit(1);
+    if is_release {
+        if !missing_vars.is_empty() {
+            eprintln!("Error: Missing mandatory environment variables in release mode: {:?}", missing_vars);
+            process::exit(1);
+        }
+    } else {
+        if env::var("ADDR").is_err() {
+            env::set_var("ADDR", "192.168.1.1");
+        }
+        if env::var("CIDR").is_err() {
+            env::set_var("CIDR", "24");
+        }
+        if env::var("SERVERPUB").is_err() {
+            env::set_var("SERVERPUB", "default-server-pub-key");
+        }
+        if env::var("SERVERENDPOINT").is_err() {
+            env::set_var("SERVERENDPOINT", "default.endpoint.com:51820");
+        }
+        if env::var("SERVERIP").is_err() {
+            env::set_var("SERVERIP", "192.168.1.2");
+        }
     }
 
     let addr = env::var("ADDR").unwrap().parse::<std::net::Ipv4Addr>().expect("Invalid ADDR");
