@@ -41,7 +41,7 @@ fn main() {
         }
     } else {
         if env::var("ADDR").is_err() {
-            env::set_var("ADDR", "192.168.1.1");
+            env::set_var("ADDR", "192.168.1.2");
         }
         if env::var("CIDR").is_err() {
             env::set_var("CIDR", "24");
@@ -53,7 +53,7 @@ fn main() {
             env::set_var("SERVERENDPOINT", "default.endpoint.com:51820");
         }
         if env::var("SERVERIP").is_err() {
-            env::set_var("SERVERIP", "192.168.1.2");
+            env::set_var("SERVERIP", "192.168.1.1");
         }
     }
 
