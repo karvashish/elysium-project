@@ -52,49 +52,32 @@ pub fn list_device_names() -> Vec<String> {
     result
 }
 
-pub fn get_device(device_name: &str, device: &mut *mut WgDevice) -> Result<(), i32> {
-    let c_device_name = CString::new(device_name).map_err(|_| -1)?;
-    unsafe {
-        match wg_get_device(device, c_device_name.as_ptr()) {
-            0 => Ok(()),
-            err => Err(err),
-        }
-    }
-}
-
-pub fn set_device(device: *mut WgDevice) -> Result<(), i32> {
-    unsafe {
-        match wg_set_device(device) {
-            0 => Ok(()),
-            err => Err(err),
-        }
-    }
-}
-
 pub fn update_device(
     priv_key: &WgKeyBase64String,
     listen_port: u16,
     device_name: &str,
 ) -> Result<(), i32> {
+    let c_device_name = CString::new(device_name).map_err(|_| -1)?;
     let mut device: *mut WgDevice = std::ptr::null_mut();
     let mut private_key_int = WgKey([0; 32]);
 
-    if let Err(err) = get_device(device_name, &mut device) {
-        println!("Error {:?} getting device by name {}", err, device_name);
-        return Err(err);
-    }
-
     unsafe {
+        if wg_get_device(&mut device, c_device_name.as_ptr()) != 0 {
+            let err = wg_get_device(&mut device, c_device_name.as_ptr());
+            println!("Error {:?} getting device by name {}", err, device_name);
+            return Err(err);
+        }
+
         let mut temp_dev = device.read();
         wg_key_from_base64(&mut private_key_int, priv_key);
-
         temp_dev.private_key = private_key_int;
         temp_dev.listen_port = listen_port;
         temp_dev
             .flags
             .insert(WgDeviceFlags::HAS_PRIVATE_KEY | WgDeviceFlags::HAS_LISTEN_PORT);
 
-        if let Err(err) = set_device(&mut temp_dev) {
+        if wg_set_device(&mut temp_dev) != 0 {
+            let err = wg_set_device(&mut temp_dev);
             println!("Failed to set device: {}", err);
             return Err(err);
         }
