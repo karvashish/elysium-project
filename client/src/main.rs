@@ -10,18 +10,32 @@ use wg_common::{
 
 use interface::{create_wireguard_ifc, update_wireguard_ifc, Operation};
 
-// The main function serves as the entry point for setting up the Elysium Project Client.
-// It performs the following tasks:
-// 1. Retrieves and validates compile-time constants embedded via the build script:
-//    - IFCNAME: The name of the WireGuard interface.
-//    - ADDR: The IPv4 address assigned to the interface.
-//    - CIDR: The subnet mask associated with the address.
-//    - PUBKEY: An optional public key, if provided during the build process.
-// 2. Parses and ensures the validity of the ADDR and CIDR values. These are required to configure
-//    the WireGuard interface properly.
-// 3. Logs the retrieved and validated values to provide feedback about the configuration being used.
-// 4. Generates a new private and public key pair for WireGuard using cryptographic utilities.
-//    These keys will be used for securing communications over the interface.
+/*
+This is the main entry point for the Elysium Project Client setup. It performs the following tasks:
+
+1. **Environment Variable Retrieval and Parsing**:  
+   - Retrieves compile-time constants embedded by the build script.  
+   - Ensures mandatory variables are correctly parsed (e.g., IP addresses and CIDR values).  
+   - Optionally retrieves `CLIENTPUB` if provided.
+
+2. **Logging Setup Information**:  
+   - Logs the retrieved environment variables to verify correctness.
+
+3. **WireGuard Key Pair Generation**:  
+   - Generates a new private key and corresponding public key using the WireGuard CFFI interface.
+
+4. **WireGuard Interface Management**:  
+   - Creates the WireGuard interface with the name specified by `IFCNAME`.  
+   - Updates the interface with the provided address, CIDR, and configuration.  
+   - Updates the device's configuration with the generated private key and port number.  
+   - Enables the interface.
+
+5. **Error Handling**:  
+   - Handles errors at each step, logging specific failures if any operation does not complete successfully.
+
+6. **List Available WireGuard Interfaces**:  
+   - Lists all available WireGuard interfaces at the end of the setup process.
+*/
 #[tokio::main]
 async fn main() {
     println!("Starting Elysium Project Client setup");
@@ -29,32 +43,39 @@ async fn main() {
     const IFCNAME: &str = env!("IFCNAME");
     const ADDR: &str = env!("ADDR");
     const CIDR: &str = env!("CIDR");
+    const SERVERPUB: &str = env!("SERVERPUB");
+    const SERVERENDPOINT: &str = env!("SERVERENDPOINT");
+    const SERVERIP: &str = env!("SERVERIP");
 
-    let pub_key = option_env!("PUBKEY");
-    if let Some(key) = pub_key {
-        println!("PUBKEY: {}", key);
+    let client_pub = option_env!("CLIENTPUB");
+    if let Some(key) = client_pub {
+        println!("CLIENTPUB: {}", key);
     } else {
-        println!("PUBKEY is not set");
+        println!("CLIENTPUB is not set");
     }
 
-    let addr = ADDR
-        .parse::<Ipv4Addr>()
-        .expect("Invalid IPv4 address in ADDR");
+    let addr = ADDR.parse::<Ipv4Addr>().expect("Invalid IPv4 address in ADDR");
     let cidr = CIDR.parse::<u8>().expect("Invalid CIDR value in CIDR");
+    let server_ip = SERVERIP
+        .parse::<Ipv4Addr>()
+        .expect("Invalid IPv4 address in SERVERIP");
 
     println!("Interface Name: {}", IFCNAME);
     println!("Address: {}/{}", addr, cidr);
+    println!("Server Public Key: {}", SERVERPUB);
+    println!("Server endpoint: {}", SERVERENDPOINT);
+    println!("Server IP: {}", server_ip);
 
     let private_key: WgKeyBase64String = gen_private_key();
     let public_key: WgKeyBase64String = gen_public_key(&private_key);
 
-    print!("New Priv key: {:?}\n", private_key);
-    print!("New Public key: {:?}\n", public_key);
+    println!("New Private Key: {:?}", private_key);
+    println!("New Public Key: {:?}", public_key);
 
     match (
         create_wireguard_ifc(IFCNAME).await,
         update_wireguard_ifc(IFCNAME, Some(addr), Some(cidr), Operation::Update).await,
-        update_device(&private_key,54161, IFCNAME),
+        update_device(&private_key, 54161, IFCNAME),
         update_wireguard_ifc(IFCNAME, None, None, Operation::Enable).await,
     ) {
         (Ok(()), Ok(()), Ok(()), Ok(())) => {
@@ -74,7 +95,5 @@ async fn main() {
         }
     }
 
-    println!("--------------{}", list_device_names().join(", "));
-
-
+    println!("Available WireGuard interfaces: {}", list_device_names().join(", "));
 }

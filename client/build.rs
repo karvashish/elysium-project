@@ -1,59 +1,74 @@
+
 use std::path::Path;
 use std::process::Command;
 use std::{env, process};
 
-// This build script performs several tasks during the build process:
-// 1. It monitors specific environment variables (PUBKEY, IFCNAME, ADDR, CIDR) and ensures
-//    that Cargo re-runs this script if any of them change.
-// 2. It retrieves and validates these environment variables:
-//    - PUBKEY: Optional, used for embedding a public key into the binary.
-//    - IFCNAME: Optional, defaults to "wg0" if not set.
-//    - ADDR and CIDR: Mandatory, representing an IPv4 address and CIDR subnet mask.
-//      The script terminates the build with an error if either is missing or invalid.
-// 3. After validation, the values of these variables are embedded into the binary at compile time
-//    using `cargo:rustc-env`, ensuring the application doesn't depend on runtime environment variables.
-// 4. The script compiles a C source file (`wireguard.c`) into a static library using GCC and AR tools:
-//    - The C file is compiled into an object file (`wireguard.o`).
-//    - The object file is archived into a static library (`libwireguard.a`).
-// 5. Cargo is instructed to link the Rust project with the static library and re-run this script if
-//    the `wireguard.c` file changes.
+
+/*
+This build script performs the following tasks:
+
+1. Ensures the Cargo build process reruns this script if specific environment variables change.
+2. Validates that mandatory environment variables are set; if any are missing, it terminates the build process with an error message.
+3. Parses and validates mandatory environment variables to ensure they are in the correct format (e.g., IP addresses and CIDR values).
+4. Handles optional environment variables like `CLIENTPUB`, logging whether they are set or not.
+5. Sets a default value for `IFCNAME` if it is not provided.
+6. Embeds the environment variable values into the binary at compile time by using the `cargo:rustc-env` directive.
+7. Compiles a C source file (`wireguard.c`) into a static library (`libwireguard.a`) using GCC, and links it with the Rust code.
+8. Informs Cargo to link the generated static library and sets up the required linker search paths.
+9. Ensures that changes to the `src/wireguard/wireguard.c` file trigger a rebuild.
+
+This script is critical for embedding runtime configuration into the binary and building the native C library required for the project.
+*/
 fn main() {
-    println!("cargo:rerun-if-env-changed=PUBKEY");
-    println!("cargo:rerun-if-env-changed=IFCNAME");
-    println!("cargo:rerun-if-env-changed=ADDR");
-    println!("cargo:rerun-if-env-changed=CIDR");
-    let pub_key = env::var("PUBKEY").ok();
-    if let Some(key) = &pub_key {
-        println!("Using PUBKEY: {}", key);
-    } else {
-        println!("PUBKEY is not set, proceeding without it");
+    for var in ["CLIENTPUB", "IFCNAME", "ADDR", "CIDR", "SERVERPUB", "SERVERENDPOINT", "SERVERIP"] {
+        println!("cargo:rerun-if-env-changed={}", var);
     }
 
-    let ifc_name = env::var("IFCNAME").unwrap_or_else(|_| "wg0".to_string());
-    println!("IFCNAME is not set, proceeding with default: {}", ifc_name);
+    let required_vars = ["ADDR", "CIDR", "SERVERPUB", "SERVERENDPOINT", "SERVERIP"];
+    let mut missing_vars = vec![];
 
-    let addr = env::var("ADDR")
-        .ok()
-        .and_then(|addr| addr.parse::<std::net::Ipv4Addr>().ok());
-    let cidr = env::var("CIDR")
-        .ok()
-        .and_then(|cidr| cidr.parse::<u8>().ok());
+    for var in &required_vars {
+        if env::var(var).is_err() {
+            missing_vars.push(*var);
+        }
+    }
 
-    if let (Some(addr), Some(cidr)) = (addr, cidr) {
-        println!("Using ADDR: {}/{}", addr, cidr);
-    } else {
-        eprintln!("Error: Both ADDR and CIDR must be set and valid");
+    if !missing_vars.is_empty() {
+        eprintln!("Error: Missing mandatory environment variables: {:?}", missing_vars);
         process::exit(1);
     }
 
-    if let Some(key) = pub_key {
-        println!("cargo:rustc-env=PUBKEY={}", key);
+    let addr = env::var("ADDR").unwrap().parse::<std::net::Ipv4Addr>().expect("Invalid ADDR");
+    let cidr = env::var("CIDR").unwrap().parse::<u8>().expect("Invalid CIDR");
+    let server_pub = env::var("SERVERPUB").unwrap();
+    let endpoint = env::var("SERVERENDPOINT").unwrap();
+    let server_ip = env::var("SERVERIP").unwrap().parse::<std::net::Ipv4Addr>().expect("Invalid SERVERIP");
+
+    let client_pub = env::var("CLIENTPUB").ok();
+    if let Some(key) = &client_pub {
+        println!("Using CLIENTPUB: {}", key);
+    } else {
+        println!("CLIENTPUB is not set, proceeding without it");
+    }
+
+    let ifc_name = env::var("IFCNAME").unwrap_or_else(|_| "wg0".to_string());
+    println!("Using IFCNAME: {}", ifc_name);
+
+    println!("Using ADDR: {}/{}", addr, cidr);
+    println!("Using SERVERPUB: {}", server_pub);
+    println!("Using SERVERENDPOINT: {}", endpoint);
+    println!("Using SERVERIP: {}", server_ip);
+
+    if let Some(key) = client_pub {
+        println!("cargo:rustc-env=CLIENTPUB={}", key);
     }
     println!("cargo:rustc-env=IFCNAME={}", ifc_name);
-    println!("cargo:rustc-env=ADDR={}", addr.unwrap());
-    println!("cargo:rustc-env=CIDR={}", cidr.unwrap());
+    println!("cargo:rustc-env=ADDR={}", addr);
+    println!("cargo:rustc-env=CIDR={}", cidr);
+    println!("cargo:rustc-env=SERVERPUB={}", server_pub);
+    println!("cargo:rustc-env=SERVERENDPOINT={}", endpoint);
+    println!("cargo:rustc-env=SERVERIP={}", server_ip);
 
-    //------------------------------------------------------------------------------//
     let out_dir = env::var("OUT_DIR").unwrap();
 
     Command::new("gcc")
