@@ -193,4 +193,5 @@ extern "C" {
     pub fn wg_generate_public_key(public_key: *mut WgKey, private_key: *const WgKey);
     pub fn wg_list_device_names() -> *const c_char;
     pub fn wg_get_device(dev: *mut *mut WgDevice, device_name: *const c_char) -> i32;
+    pub fn wg_set_device(dev: *mut WgDevice) -> i32;
 }

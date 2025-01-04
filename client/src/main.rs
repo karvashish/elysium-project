@@ -4,8 +4,8 @@ mod interface;
 mod wg_common;
 
 use wg_common::{
-    wg_common::{gen_private_key, gen_public_key, get_device, list_device_names},
-    wireguard_cffi::{WgDevice, WgKeyBase64String},
+    wg_common::{gen_private_key, gen_public_key, list_device_names, update_device},
+    wireguard_cffi::WgKeyBase64String,
 };
 
 use interface::{create_wireguard_ifc, update_wireguard_ifc, Operation};
@@ -54,22 +54,27 @@ async fn main() {
     match (
         create_wireguard_ifc(IFCNAME).await,
         update_wireguard_ifc(IFCNAME, Some(addr), Some(cidr), Operation::Update).await,
-        //TODO: Configure wireguard device
+        update_device(&private_key,54161, IFCNAME),
         update_wireguard_ifc(IFCNAME, None, None, Operation::Enable).await,
     ) {
-        (Ok(()), Ok(()), Ok(())) => println!("Interface setup completed successfully"),
-        (Err(e1), _, _) => eprintln!("Interface creation failed: {}", e1),
-        (Ok(()), Err(e2), _) => eprintln!("Interface update failed: {}", e2),
-        (Ok(()), _, Err(e3)) => eprintln!("Interface enabling failed: {}", e3),
+        (Ok(()), Ok(()), Ok(()), Ok(())) => {
+            println!("Interface setup completed successfully.");
+        }
+        (Err(e1), _, _, _) => {
+            eprintln!("Interface creation failed: {}", e1);
+        }
+        (Ok(()), Err(e2), _, _) => {
+            eprintln!("Interface update failed: {}", e2);
+        }
+        (Ok(()), Ok(()), Err(e3), _) => {
+            eprintln!("Device update failed: {}", e3);
+        }
+        (Ok(()), Ok(()), Ok(()), Err(e4)) => {
+            eprintln!("Interface enabling failed: {}", e4);
+        }
     }
 
     println!("--------------{}", list_device_names().join(", "));
 
 
-    let mut device: *mut WgDevice = std::ptr::null_mut();
-
-    match get_device(IFCNAME, &mut device) {
-        Ok(_) => println!("Successfully fetched device."),
-        Err(err) => eprintln!("Error fetching device: {}", err),
-    }
 }
