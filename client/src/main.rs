@@ -71,8 +71,8 @@ async fn main() {
     println!("New Private Key: {:?}", private_key);
     println!("New Public Key: {:?}", public_key);
 
-    let server_ip_concat = format!("{}/{}", SERVERIP, CIDR);
-    let server_ip: &str = &server_ip_concat;
+    let server_ip_cidr = format!("{}/{}", SERVERIP, CIDR);
+    let server_ip: &str = &server_ip_cidr;
 
     match (
         create_wireguard_ifc(IFCNAME).await,
