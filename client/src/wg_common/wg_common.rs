@@ -76,6 +76,7 @@ pub fn update_device(
             .flags
             .insert(WgDeviceFlags::HAS_PRIVATE_KEY | WgDeviceFlags::HAS_LISTEN_PORT);
 
+        println!("{:#?}", temp_dev);
         if wg_set_device(&mut temp_dev) != 0 {
             let err = wg_set_device(&mut temp_dev);
             println!("Failed to set device: {}", err);

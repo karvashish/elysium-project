@@ -36,7 +36,7 @@ This is the main entry point for the Elysium Project Client setup. It performs t
 6. **List Available WireGuard Interfaces**:  
    - Lists all available WireGuard interfaces at the end of the setup process.
 */
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() {
     println!("Starting Elysium Project Client setup");
 

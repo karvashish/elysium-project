@@ -18,6 +18,31 @@ bitflags! {
     }
 }
 
+impl fmt::Debug for WgDeviceFlags {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut active_flags = vec![];
+
+        if self.contains(WgDeviceFlags::REPLACE_PEERS) {
+            active_flags.push("REPLACE_PEERS");
+        }
+        if self.contains(WgDeviceFlags::HAS_PRIVATE_KEY) {
+            active_flags.push("HAS_PRIVATE_KEY");
+        }
+        if self.contains(WgDeviceFlags::HAS_PUBLIC_KEY) {
+            active_flags.push("HAS_PUBLIC_KEY");
+        }
+        if self.contains(WgDeviceFlags::HAS_LISTEN_PORT) {
+            active_flags.push("HAS_LISTEN_PORT");
+        }
+        if self.contains(WgDeviceFlags::HAS_FWMARK) {
+            active_flags.push("HAS_FWMARK");
+        }
+
+        write!(f, "WgDeviceFlags({})\n", active_flags.join(" | "))
+    }
+}
+
+
 bitflags! {
     #[repr(transparent)]
     pub struct WgPeerFlags: u32 {
@@ -26,6 +51,30 @@ bitflags! {
         const HAS_PUBLIC_KEY = 1 << 2;
         const HAS_PRESHARED_KEY = 1 << 3;
         const HAS_PERSISTENT_KEEPALIVE_INTERVAL = 1 << 4;
+    }
+}
+
+impl fmt::Debug for WgPeerFlags {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut active_flags = vec![];
+
+        if self.contains(WgPeerFlags::REMOVE_ME) {
+            active_flags.push("REMOVE_ME");
+        }
+        if self.contains(WgPeerFlags::REPLACE_ALLOWEDIPS) {
+            active_flags.push("REPLACE_ALLOWEDIPS");
+        }
+        if self.contains(WgPeerFlags::HAS_PUBLIC_KEY) {
+            active_flags.push("HAS_PUBLIC_KEY");
+        }
+        if self.contains(WgPeerFlags::HAS_PRESHARED_KEY) {
+            active_flags.push("HAS_PRESHARED_KEY");
+        }
+        if self.contains(WgPeerFlags::HAS_PERSISTENT_KEEPALIVE_INTERVAL) {
+            active_flags.push("HAS_PERSISTENT_KEEPALIVE_INTERVAL");
+        }
+
+        write!(f, "WgPeerFlags({})\n", active_flags.join(" | "))
     }
 }
 
@@ -91,6 +140,7 @@ impl fmt::Debug for WgKeyBase64String {
 
 /// Represents a WireGuard peer.
 #[repr(C)]
+#[derive(Debug)]
 pub struct WgPeer {
     pub flags: WgPeerFlags,
     pub public_key: WgKey,
@@ -107,6 +157,7 @@ pub struct WgPeer {
 
 /// Represents a WireGuard device.
 #[repr(C)]
+#[derive(Debug)]
 pub struct WgDevice {
     pub name: [u8; 16],
     pub ifindex: u32,
@@ -157,6 +208,18 @@ pub union WgEndpoint {
     pub addr: Sockaddr,
     pub addr4: SockaddrIn,
     pub addr6: SockaddrIn6,
+}
+
+impl fmt::Debug for WgEndpoint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        unsafe {
+            f.debug_struct("WgEndpoint")
+                .field("addr", &self.addr)
+                .field("addr4", &self.addr4)
+                .field("addr6", &self.addr6)
+                .finish()
+        }
+    }
 }
 
 /// Represents an allowed IP address for a WireGuard peer.
