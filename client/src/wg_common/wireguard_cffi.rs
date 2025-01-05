@@ -1,5 +1,5 @@
-use std::{fmt, os::raw::c_char};
 use bitflags::bitflags;
+use std::{fmt, os::raw::c_char};
 
 //---------------------------------------------- Constants ----------------------------------------------//
 
@@ -9,6 +9,7 @@ use bitflags::bitflags;
 
 bitflags! {
     #[repr(transparent)]
+    #[derive( Clone, Copy, PartialEq, Eq)]
     pub struct WgDeviceFlags: u32 {
         const REPLACE_PEERS = 1 << 0;
         const HAS_PRIVATE_KEY = 1 << 1;
@@ -42,9 +43,9 @@ impl fmt::Debug for WgDeviceFlags {
     }
 }
 
-
 bitflags! {
     #[repr(transparent)]
+    #[derive( Clone, Copy, PartialEq, Eq)]
     pub struct WgPeerFlags: u32 {
         const REMOVE_ME = 1 << 0;
         const REPLACE_ALLOWEDIPS = 1 << 1;
@@ -89,7 +90,9 @@ pub struct FfiIpv4Addr {
 
 impl From<std::net::Ipv4Addr> for FfiIpv4Addr {
     fn from(ip: std::net::Ipv4Addr) -> Self {
-        FfiIpv4Addr { octets: ip.octets() }
+        FfiIpv4Addr {
+            octets: ip.octets(),
+        }
     }
 }
 
@@ -108,7 +111,9 @@ pub struct FfiIpv6Addr {
 
 impl From<std::net::Ipv6Addr> for FfiIpv6Addr {
     fn from(ip: std::net::Ipv6Addr) -> Self {
-        FfiIpv6Addr { segments: ip.segments() }
+        FfiIpv6Addr {
+            segments: ip.segments(),
+        }
     }
 }
 
@@ -120,12 +125,12 @@ impl From<FfiIpv6Addr> for std::net::Ipv6Addr {
 
 /// A wrapper for a WireGuard key.
 #[repr(C)]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WgKey(pub [u8; 32]);
 
 /// A base64-encoded WireGuard key.
 #[repr(C)]
-#[derive(PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct WgKeyBase64String(pub [u8; 45]);
 
 impl fmt::Debug for WgKeyBase64String {
@@ -135,12 +140,11 @@ impl fmt::Debug for WgKeyBase64String {
     }
 }
 
-
 //---------------------------------------------- Core Structs ----------------------------------------------//
 
 /// Represents a WireGuard peer.
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct WgPeer {
     pub flags: WgPeerFlags,
     pub public_key: WgKey,
@@ -157,7 +161,7 @@ pub struct WgPeer {
 
 /// Represents a WireGuard device.
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WgDevice {
     pub name: [u8; 16],
     pub ifindex: u32,
@@ -182,7 +186,7 @@ pub struct Sockaddr {
 
 /// Represents a socket address for IPv4.
 #[repr(C)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SockaddrIn {
     pub sin_family: u16,
     pub sin_port: u16,
@@ -192,7 +196,7 @@ pub struct SockaddrIn {
 
 /// Represents a socket address for IPv6.
 #[repr(C)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SockaddrIn6 {
     pub sin6_family: u16,
     pub sin6_port: u16,
@@ -224,6 +228,7 @@ impl fmt::Debug for WgEndpoint {
 
 /// Represents an allowed IP address for a WireGuard peer.
 #[repr(C)]
+#[derive(Debug, Clone, Copy)]
 pub struct WgAllowedIp {
     pub family: u16,
     pub cidr: u8,
@@ -237,6 +242,16 @@ pub struct WgAllowedIp {
 pub union Ip {
     pub ip4: FfiIpv4Addr,
     pub ip6: FfiIpv6Addr,
+}
+
+impl fmt::Debug for Ip {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        unsafe {
+            match self {
+                Ip { ip4 } => f.debug_struct("Ip").field("ip4", &ip4).finish(),
+            }
+        }
+    }
 }
 
 /// Represents a 64-bit timestamp.
