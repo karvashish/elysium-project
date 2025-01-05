@@ -58,21 +58,21 @@ async fn main() {
         .parse::<Ipv4Addr>()
         .expect("Invalid IPv4 address in ADDR");
     let cidr = CIDR.parse::<u8>().expect("Invalid CIDR value in CIDR");
-    let server_ip = SERVERIP
-        .parse::<Ipv4Addr>()
-        .expect("Invalid IPv4 address in SERVERIP");
+
 
     println!("Interface Name: {}", IFCNAME);
     println!("Address: {}/{}", addr, cidr);
     println!("Server Public Key: {}", SERVERPUB);
     println!("Server endpoint: {}", SERVERENDPOINT);
-    println!("Server IP: {}", server_ip);
 
     let private_key: WgKeyBase64String = gen_private_key();
     let public_key: WgKeyBase64String = gen_public_key(&private_key);
 
     println!("New Private Key: {:?}", private_key);
     println!("New Public Key: {:?}", public_key);
+
+    let server_ip_concat = format!("{}/{}", SERVERIP, CIDR);
+    let server_ip: &str = &server_ip_concat;
 
     match (
         create_wireguard_ifc(IFCNAME).await,
@@ -83,7 +83,7 @@ async fn main() {
             IFCNAME,
             SERVERPUB,
             SERVERENDPOINT,
-            SERVERIP,
+            server_ip,
         ),
         update_wireguard_ifc(IFCNAME, None, None, Operation::Enable).await,
     ) {

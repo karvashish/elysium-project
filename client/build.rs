@@ -47,10 +47,10 @@ fn main() {
             env::set_var("CIDR", "24");
         }
         if env::var("SERVERPUB").is_err() {
-            env::set_var("SERVERPUB", "default-server-pub-key");
+            env::set_var("SERVERPUB", "Vwragu7jRf1DTJDw8R5d4ZjoZsj5UEtnsBa62yEmB1s=");
         }
         if env::var("SERVERENDPOINT").is_err() {
-            env::set_var("SERVERENDPOINT", "default.endpoint.com:51820");
+            env::set_var("SERVERENDPOINT", "172.128.1.2:51820");
         }
         if env::var("SERVERIP").is_err() {
             env::set_var("SERVERIP", "192.168.1.1");

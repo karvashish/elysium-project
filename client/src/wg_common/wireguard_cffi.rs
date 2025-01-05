@@ -10,7 +10,7 @@ const AF_INET6: u16 = 10;
 
 bitflags! {
     #[repr(transparent)]
-    #[derive( Clone, Copy, PartialEq, Eq)]
+    #[derive(Clone, Copy, PartialEq, Eq)]
     pub struct WgDeviceFlags: u32 {
         const REPLACE_PEERS = 1 << 0;
         const HAS_PRIVATE_KEY = 1 << 1;
@@ -46,7 +46,7 @@ impl fmt::Debug for WgDeviceFlags {
 
 bitflags! {
     #[repr(transparent)]
-    #[derive( Clone, Copy, PartialEq, Eq)]
+    #[derive(Clone, Copy, PartialEq, Eq)]
     pub struct WgPeerFlags: u32 {
         const REMOVE_ME = 1 << 0;
         const REPLACE_ALLOWEDIPS = 1 << 1;
@@ -80,79 +80,6 @@ impl fmt::Debug for WgPeerFlags {
     }
 }
 
-//---------------------------------------------- Helper Structs ----------------------------------------------//
-
-/// A wrapper for an IPv4 address compatible with FFI.
-#[repr(C)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct FfiIpv4Addr {
-    pub octets: [u8; 4],
-}
-
-impl From<std::net::Ipv4Addr> for FfiIpv4Addr {
-    fn from(ip: std::net::Ipv4Addr) -> Self {
-        FfiIpv4Addr {
-            octets: ip.octets(),
-        }
-    }
-}
-
-impl From<FfiIpv4Addr> for std::net::Ipv4Addr {
-    fn from(ip: FfiIpv4Addr) -> Self {
-        std::net::Ipv4Addr::from(ip.octets)
-    }
-}
-
-/// A wrapper for an IPv6 address compatible with FFI.
-#[repr(C)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct FfiIpv6Addr {
-    pub segments: [u16; 8],
-}
-
-impl From<std::net::Ipv6Addr> for FfiIpv6Addr {
-    fn from(ip: std::net::Ipv6Addr) -> Self {
-        FfiIpv6Addr {
-            segments: ip.segments(),
-        }
-    }
-}
-
-impl From<FfiIpv6Addr> for std::net::Ipv6Addr {
-    fn from(ip: FfiIpv6Addr) -> Self {
-        std::net::Ipv6Addr::from(ip.segments)
-    }
-}
-
-/// A wrapper for a WireGuard key.
-#[repr(C)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct WgKey(pub [u8; 32]);
-
-/// A base64-encoded WireGuard key.
-#[repr(C)]
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub struct WgKeyBase64String(pub [u8; 45]);
-
-impl From<&str> for WgKeyBase64String {
-    fn from(input: &str) -> Self {
-        let mut array = [0u8; 45];
-        let bytes = input.as_bytes();
-
-        let len = bytes.len().min(45);
-        array[..len].copy_from_slice(&bytes[..len]);
-
-        WgKeyBase64String(array)
-    }
-}
-
-impl fmt::Debug for WgKeyBase64String {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let as_str: String = self.0.iter().map(|&c| c as char).collect();
-        write!(f, "{}", as_str)
-    }
-}
-
 //---------------------------------------------- Core Structs ----------------------------------------------//
 
 /// Represents a WireGuard peer.
@@ -171,7 +98,6 @@ pub struct WgPeer {
     pub last_allowed_ip: *mut WgAllowedIp,
     pub next_peer: *mut WgPeer,
 }
-
 
 impl WgPeer {
     pub fn init(public_key: WgKey, endpoint: WgEndpoint, first_allowed_ip: *mut WgAllowedIp) -> Self {
@@ -194,7 +120,6 @@ impl WgPeer {
     }
 }
 
-
 /// Represents a WireGuard device.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -210,7 +135,119 @@ pub struct WgDevice {
     pub last_peer: *mut WgPeer,
 }
 
-//---------------------------------------------- Miscellaneous Structs ----------------------------------------------//
+//---------------------------------------------- Union Types ----------------------------------------------//
+
+/// A union representing a WireGuard endpoint.
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union WgEndpoint {
+    pub addr: Sockaddr,
+    pub addr4: SockaddrIn,
+    pub addr6: SockaddrIn6,
+}
+
+impl fmt::Debug for WgEndpoint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        unsafe {
+            f.debug_struct("WgEndpoint")
+                .field("addr", &self.addr)
+                .field("addr4", &self.addr4)
+                .field("addr6", &self.addr6)
+                .finish()
+        }
+    }
+}
+
+/// A union for IPv4 or IPv6 addresses.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub union Ip {
+    pub ip4: FfiIpv4Addr,
+    pub ip6: FfiIpv6Addr,
+}
+
+impl fmt::Debug for Ip {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        unsafe {
+            match self {
+                Ip { ip4 } => f.debug_struct("Ip").field("ip4", &ip4).finish(),
+            }
+        }
+    }
+}
+
+//---------------------------------------------- Helper Structs ----------------------------------------------//
+
+/// A wrapper for an IPv4 address compatible with FFI.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FfiIpv4Addr {
+    pub octets: [u8; 4],
+}
+
+impl From<Ipv4Addr> for FfiIpv4Addr {
+    fn from(ip: Ipv4Addr) -> Self {
+        FfiIpv4Addr {
+            octets: ip.octets(),
+        }
+    }
+}
+
+impl From<FfiIpv4Addr> for Ipv4Addr {
+    fn from(ip: FfiIpv4Addr) -> Self {
+        Ipv4Addr::from(ip.octets)
+    }
+}
+
+/// A wrapper for an IPv6 address compatible with FFI.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FfiIpv6Addr {
+    pub segments: [u16; 8],
+}
+
+impl From<Ipv6Addr> for FfiIpv6Addr {
+    fn from(ip: Ipv6Addr) -> Self {
+        FfiIpv6Addr {
+            segments: ip.segments(),
+        }
+    }
+}
+
+impl From<FfiIpv6Addr> for Ipv6Addr {
+    fn from(ip: FfiIpv6Addr) -> Self {
+        Ipv6Addr::from(ip.segments)
+    }
+}
+
+/// A wrapper for a WireGuard key.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WgKey(pub [u8; 32]);
+
+/// A base64-encoded WireGuard key.
+#[repr(C)]
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct WgKeyBase64String(pub [u8; 45]);
+
+impl From<&str> for WgKeyBase64String {
+    fn from(input: &str) -> Self {
+        let mut array = [0u8; 45];
+        let bytes = input.as_bytes();
+        let len = bytes.len().min(45);
+        array[..len].copy_from_slice(&bytes[..len]);
+        WgKeyBase64String(array)
+    }
+}
+
+impl fmt::Debug for WgKeyBase64String {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let as_str: String = self.0.iter().map(|&c| c as char).collect();
+        write!(f, "{}", as_str)
+    }
+}
+
+//---------------------------------------------- Socket Address Structs ----------------------------------------------//
 
 /// Represents a generic socket address.
 #[repr(C)]
@@ -241,60 +278,7 @@ pub struct SockaddrIn6 {
     pub sin6_scope_id: u32,
 }
 
-/// A union representing a WireGuard endpoint.
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub union WgEndpoint {
-    pub addr: Sockaddr,
-    pub addr4: SockaddrIn,
-    pub addr6: SockaddrIn6,
-}
-
-impl fmt::Debug for WgEndpoint {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        unsafe {
-            f.debug_struct("WgEndpoint")
-                .field("addr", &self.addr)
-                .field("addr4", &self.addr4)
-                .field("addr6", &self.addr6)
-                .finish()
-        }
-    }
-}
-
-impl From<&str> for WgEndpoint {
-    fn from(input: &str) -> Self {
-        if let Ok(std::net::SocketAddr::V4(addr)) = input.parse() {
-            let ip = addr.ip().octets();
-            let port = addr.port();
-
-            let sockaddr_in = SockaddrIn {
-                sin_family: AF_INET,
-                sin_port: port.to_be(),
-                sin_addr: FfiIpv4Addr { octets: ip },
-                sin_zero: [0u8; 8],
-            };
-
-            WgEndpoint { addr4: sockaddr_in }
-        } else if let Ok(std::net::SocketAddr::V6(addr)) = input.parse() {
-            let ip = addr.ip().segments();
-            let port = addr.port();
-
-            let sockaddr_in6 = SockaddrIn6 {
-                sin6_family: AF_INET6,
-                sin6_port: port.to_be(),
-                sin6_flowinfo: 0,
-                sin6_addr: FfiIpv6Addr { segments: ip },
-                sin6_scope_id: 0,
-            };
-
-            WgEndpoint { addr6: sockaddr_in6 }
-        } else {
-            panic!("Invalid socket address");
-        }
-    }
-}
-
+//---------------------------------------------- Miscellaneous Structs ----------------------------------------------//
 
 /// Represents an allowed IP address for a WireGuard peer.
 #[repr(C)]
@@ -308,7 +292,6 @@ pub struct WgAllowedIp {
 
 impl From<&str> for WgAllowedIp {
     fn from(input: &str) -> Self {
-        // Split the input string into IP and CIDR parts
         let parts: Vec<&str> = input.split('/').collect();
         if parts.len() != 2 {
             panic!("Invalid IP/CIDR format");
@@ -345,30 +328,47 @@ impl From<&str> for WgAllowedIp {
     }
 }
 
-/// A union for IPv4 or IPv6 addresses.
-#[repr(C)]
-#[derive(Clone, Copy)]
-pub union Ip {
-    pub ip4: FfiIpv4Addr,
-    pub ip6: FfiIpv6Addr,
-}
-
-impl fmt::Debug for Ip {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        unsafe {
-            match self {
-                Ip { ip4 } => f.debug_struct("Ip").field("ip4", &ip4).finish(),
-            }
-        }
-    }
-}
-
 /// Represents a 64-bit timestamp.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Timespec64 {
     pub tv_sec: i64,
     pub tv_nsec: i64,
+}
+
+//---------------------------------------------- WgEndpoint Conversion ----------------------------------------------//
+
+impl From<&str> for WgEndpoint {
+    fn from(input: &str) -> Self {
+        if let Ok(std::net::SocketAddr::V4(addr)) = input.parse() {
+            let ip = addr.ip().octets();
+            let port = addr.port();
+
+            let sockaddr_in = SockaddrIn {
+                sin_family: AF_INET,
+                sin_port: port.to_be(),
+                sin_addr: FfiIpv4Addr { octets: ip },
+                sin_zero: [0u8; 8],
+            };
+
+            WgEndpoint { addr4: sockaddr_in }
+        } else if let Ok(std::net::SocketAddr::V6(addr)) = input.parse() {
+            let ip = addr.ip().segments();
+            let port = addr.port();
+
+            let sockaddr_in6 = SockaddrIn6 {
+                sin6_family: AF_INET6,
+                sin6_port: port.to_be(),
+                sin6_flowinfo: 0,
+                sin6_addr: FfiIpv6Addr { segments: ip },
+                sin6_scope_id: 0,
+            };
+
+            WgEndpoint { addr6: sockaddr_in6 }
+        } else {
+            panic!("Invalid socket address");
+        }
+    }
 }
 
 //---------------------------------------------- FFI Functions ----------------------------------------------//
