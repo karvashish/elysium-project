@@ -13,27 +13,27 @@ use interface::{create_wireguard_ifc, update_wireguard_ifc, Operation};
 /*
 This is the main entry point for the Elysium Project Client setup. It performs the following tasks:
 
-1. **Environment Variable Retrieval and Parsing**:  
-   - Retrieves compile-time constants embedded by the build script.  
-   - Ensures mandatory variables are correctly parsed (e.g., IP addresses and CIDR values).  
+1. **Environment Variable Retrieval and Parsing**:
+   - Retrieves compile-time constants embedded by the build script.
+   - Ensures mandatory variables are correctly parsed (e.g., IP addresses and CIDR values).
    - Optionally retrieves `CLIENTPUB` if provided.
 
-2. **Logging Setup Information**:  
+2. **Logging Setup Information**:
    - Logs the retrieved environment variables to verify correctness.
 
-3. **WireGuard Key Pair Generation**:  
+3. **WireGuard Key Pair Generation**:
    - Generates a new private key and corresponding public key using the WireGuard CFFI interface.
 
-4. **WireGuard Interface Management**:  
-   - Creates the WireGuard interface with the name specified by `IFCNAME`.  
-   - Updates the interface with the provided address, CIDR, and configuration.  
-   - Updates the device's configuration with the generated private key and port number.  
+4. **WireGuard Interface Management**:
+   - Creates the WireGuard interface with the name specified by `IFCNAME`.
+   - Updates the interface with the provided address, CIDR, and configuration.
+   - Updates the device's configuration with the generated private key and port number.
    - Enables the interface.
 
-5. **Error Handling**:  
+5. **Error Handling**:
    - Handles errors at each step, logging specific failures if any operation does not complete successfully.
 
-6. **List Available WireGuard Interfaces**:  
+6. **List Available WireGuard Interfaces**:
    - Lists all available WireGuard interfaces at the end of the setup process.
 */
 #[tokio::main(flavor = "current_thread")]
@@ -54,7 +54,9 @@ async fn main() {
         println!("CLIENTPUB is not set");
     }
 
-    let addr = ADDR.parse::<Ipv4Addr>().expect("Invalid IPv4 address in ADDR");
+    let addr = ADDR
+        .parse::<Ipv4Addr>()
+        .expect("Invalid IPv4 address in ADDR");
     let cidr = CIDR.parse::<u8>().expect("Invalid CIDR value in CIDR");
     let server_ip = SERVERIP
         .parse::<Ipv4Addr>()
@@ -75,7 +77,14 @@ async fn main() {
     match (
         create_wireguard_ifc(IFCNAME).await,
         update_wireguard_ifc(IFCNAME, Some(addr), Some(cidr), Operation::Update).await,
-        update_device(&private_key, 54161, IFCNAME),
+        update_device(
+            &private_key,
+            54161,
+            IFCNAME,
+            SERVERPUB,
+            SERVERENDPOINT,
+            SERVERIP,
+        ),
         update_wireguard_ifc(IFCNAME, None, None, Operation::Enable).await,
     ) {
         (Ok(()), Ok(()), Ok(()), Ok(())) => {
@@ -95,5 +104,8 @@ async fn main() {
         }
     }
 
-    println!("Available WireGuard interfaces: {}", list_device_names().join(", "));
+    println!(
+        "Available WireGuard interfaces: {}",
+        list_device_names().join(", ")
+    );
 }

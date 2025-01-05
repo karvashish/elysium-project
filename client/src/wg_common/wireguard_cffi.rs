@@ -1,9 +1,10 @@
 use bitflags::bitflags;
-use std::{fmt, os::raw::c_char};
+use std::{fmt, net::{Ipv4Addr, Ipv6Addr}, os::raw::c_char};
 
 //---------------------------------------------- Constants ----------------------------------------------//
 
-// Define any necessary constants here.
+const AF_INET: u16 = 2;
+const AF_INET6: u16 = 10;
 
 //---------------------------------------------- Enums and Flags ----------------------------------------------//
 
@@ -133,6 +134,18 @@ pub struct WgKey(pub [u8; 32]);
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct WgKeyBase64String(pub [u8; 45]);
 
+impl From<&str> for WgKeyBase64String {
+    fn from(input: &str) -> Self {
+        let mut array = [0u8; 45];
+        let bytes = input.as_bytes();
+
+        let len = bytes.len().min(45);
+        array[..len].copy_from_slice(&bytes[..len]);
+
+        WgKeyBase64String(array)
+    }
+}
+
 impl fmt::Debug for WgKeyBase64String {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let as_str: String = self.0.iter().map(|&c| c as char).collect();
@@ -158,6 +171,29 @@ pub struct WgPeer {
     pub last_allowed_ip: *mut WgAllowedIp,
     pub next_peer: *mut WgPeer,
 }
+
+
+impl WgPeer {
+    pub fn init(public_key: WgKey, endpoint: WgEndpoint, first_allowed_ip: *mut WgAllowedIp) -> Self {
+        WgPeer {
+            flags: WgPeerFlags::HAS_PUBLIC_KEY,
+            public_key,
+            preshared_key: WgKey([0; 32]),
+            endpoint,
+            last_handshake_time: Timespec64 {
+                tv_sec: 0,
+                tv_nsec: 0,
+            },
+            rx_bytes: 0,
+            tx_bytes: 0,
+            persistent_keepalive_interval: 0,
+            first_allowed_ip,
+            last_allowed_ip: first_allowed_ip,
+            next_peer: std::ptr::null_mut(),
+        }
+    }
+}
+
 
 /// Represents a WireGuard device.
 #[repr(C)]
@@ -226,6 +262,40 @@ impl fmt::Debug for WgEndpoint {
     }
 }
 
+impl From<&str> for WgEndpoint {
+    fn from(input: &str) -> Self {
+        if let Ok(std::net::SocketAddr::V4(addr)) = input.parse() {
+            let ip = addr.ip().octets();
+            let port = addr.port();
+
+            let sockaddr_in = SockaddrIn {
+                sin_family: AF_INET,
+                sin_port: port.to_be(),
+                sin_addr: FfiIpv4Addr { octets: ip },
+                sin_zero: [0u8; 8],
+            };
+
+            WgEndpoint { addr4: sockaddr_in }
+        } else if let Ok(std::net::SocketAddr::V6(addr)) = input.parse() {
+            let ip = addr.ip().segments();
+            let port = addr.port();
+
+            let sockaddr_in6 = SockaddrIn6 {
+                sin6_family: AF_INET6,
+                sin6_port: port.to_be(),
+                sin6_flowinfo: 0,
+                sin6_addr: FfiIpv6Addr { segments: ip },
+                sin6_scope_id: 0,
+            };
+
+            WgEndpoint { addr6: sockaddr_in6 }
+        } else {
+            panic!("Invalid socket address");
+        }
+    }
+}
+
+
 /// Represents an allowed IP address for a WireGuard peer.
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -234,6 +304,45 @@ pub struct WgAllowedIp {
     pub cidr: u8,
     pub ip: Ip,
     pub next_allowed_ip: *mut WgAllowedIp,
+}
+
+impl From<&str> for WgAllowedIp {
+    fn from(input: &str) -> Self {
+        // Split the input string into IP and CIDR parts
+        let parts: Vec<&str> = input.split('/').collect();
+        if parts.len() != 2 {
+            panic!("Invalid IP/CIDR format");
+        }
+
+        let ip_str = parts[0];
+        let cidr: u8 = parts[1].parse().expect("Invalid CIDR value");
+
+        if let Ok(ipv4) = ip_str.parse::<Ipv4Addr>() {
+            WgAllowedIp {
+                family: AF_INET,
+                cidr,
+                ip: Ip {
+                    ip4: FfiIpv4Addr {
+                        octets: ipv4.octets(),
+                    },
+                },
+                next_allowed_ip: std::ptr::null_mut(),
+            }
+        } else if let Ok(ipv6) = ip_str.parse::<Ipv6Addr>() {
+            WgAllowedIp {
+                family: AF_INET6,
+                cidr,
+                ip: Ip {
+                    ip6: FfiIpv6Addr {
+                        segments: ipv6.segments(),
+                    },
+                },
+                next_allowed_ip: std::ptr::null_mut(),
+            }
+        } else {
+            panic!("Invalid IP address format");
+        }
+    }
 }
 
 /// A union for IPv4 or IPv6 addresses.

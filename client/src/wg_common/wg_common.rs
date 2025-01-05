@@ -1,9 +1,9 @@
 use super::wireguard_cffi::{wg_get_device, wg_set_device, WgDevice};
 use crate::wg_common::wireguard_cffi::{
-    wg_generate_private_key, wg_generate_public_key, wg_key_from_base64, wg_key_to_base64,
-    wg_list_device_names, WgDeviceFlags, WgKey, WgKeyBase64String,
+    wg_generate_private_key, wg_generate_public_key, wg_key_from_base64, wg_key_to_base64, wg_list_device_names, WgAllowedIp, WgDeviceFlags, WgEndpoint, WgKey, WgKeyBase64String, WgPeer
 };
 use std::ffi::{CStr, CString};
+
 
 pub fn gen_private_key() -> WgKeyBase64String {
     let mut private_key_int = WgKey([0; 32]);
@@ -26,6 +26,17 @@ pub fn gen_public_key(private_key: &WgKeyBase64String) -> WgKeyBase64String {
     }
     public_key
 }
+pub fn wg_key_from_str(input: &str) -> WgKey {
+    let key  = WgKeyBase64String::from(input);
+    let mut key_int = WgKey([0; 32]);   
+
+    unsafe {
+        wg_key_from_base64(&mut key_int, &key);
+    }
+
+    key_int
+}
+
 
 pub fn list_device_names() -> Vec<String> {
     let mut result = Vec::new();
@@ -56,10 +67,20 @@ pub fn update_device(
     priv_key: &WgKeyBase64String,
     listen_port: u16,
     device_name: &str,
+    server_pub: &str,
+    s_endpoint: &str,
+    s_ip: &str
 ) -> Result<(), i32> {
     let c_device_name = CString::new(device_name).map_err(|_| -1)?;
     let mut device: *mut WgDevice = std::ptr::null_mut();
     let mut private_key_int = WgKey([0; 32]);
+
+    let server_pub_key_int = wg_key_from_str(server_pub);
+    let server_endpoint = WgEndpoint::from(s_endpoint);
+    let mut server_allowed_ip = WgAllowedIp::from(s_ip);
+    let server_peer = WgPeer::init(server_pub_key_int, server_endpoint, &mut server_allowed_ip);
+
+    // println!("{:?}", server_peer);
 
     unsafe {
         if wg_get_device(&mut device, c_device_name.as_ptr()) != 0 {
@@ -76,7 +97,7 @@ pub fn update_device(
             .flags
             .insert(WgDeviceFlags::HAS_PRIVATE_KEY | WgDeviceFlags::HAS_LISTEN_PORT);
 
-        println!("{:#?}", temp_dev);
+        // println!("{:#?}", temp_dev);
         if wg_set_device(&mut temp_dev) != 0 {
             let err = wg_set_device(&mut temp_dev);
             println!("Failed to set device: {}", err);
