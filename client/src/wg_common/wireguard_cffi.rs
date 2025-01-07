@@ -301,15 +301,7 @@ pub struct WgAllowedIp {
 
 impl From<&str> for WgAllowedIp {
     fn from(input: &str) -> Self {
-        let parts: Vec<&str> = input.split('/').collect();
-        if parts.len() != 2 {
-            panic!("Invalid IP/CIDR format");
-        }
-
-        let ip_str = parts[0];
-        let cidr: u8 = parts[1].parse().expect("Invalid CIDR value");
-
-        if let Ok(ipv4) = ip_str.parse::<Ipv4Addr>() {
+        if let Ok(ipv4) = input.parse::<Ipv4Addr>() {
             WgAllowedIp {
                 family: AF_INET,
                 _pad0: [0u8; 2],
@@ -318,10 +310,10 @@ impl From<&str> for WgAllowedIp {
                         octets: ipv4.octets(),
                     },
                 },
-                cidr,
+                cidr: 32 as u8,
                 next_allowed_ip: std::ptr::null_mut(),
             }
-        } else if let Ok(ipv6) = ip_str.parse::<Ipv6Addr>() {
+        } else if let Ok(ipv6) = input.parse::<Ipv6Addr>() {
             WgAllowedIp {
                 family: AF_INET6,
                 _pad0: [0u8; 2],
@@ -330,7 +322,7 @@ impl From<&str> for WgAllowedIp {
                         segments: ipv6.segments(),
                     },
                 },
-                cidr,
+                cidr: 128 as u8,
                 next_allowed_ip: std::ptr::null_mut(),
             }
         } else {

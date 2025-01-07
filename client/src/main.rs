@@ -70,9 +70,6 @@ async fn main() {
     println!("New Private Key: {:?}", private_key);
     println!("New Public Key: {:?}", public_key);
 
-    let server_ip_cidr = format!("{}/{}", SERVERIP, 32);
-    let server_ip: &str = &server_ip_cidr;
-
     match (
         create_wireguard_ifc(IFCNAME).await,
         update_wireguard_ifc(IFCNAME, Some(addr), Some(cidr), Operation::Update).await,
@@ -82,7 +79,7 @@ async fn main() {
             IFCNAME,
             SERVERPUB,
             SERVERENDPOINT,
-            server_ip,
+            SERVERIP,
         ),
         update_wireguard_ifc(IFCNAME, None, None, Operation::Enable).await,
     ) {
