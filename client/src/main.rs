@@ -71,7 +71,7 @@ async fn main() {
     println!("New Private Key: {:?}", private_key);
     println!("New Public Key: {:?}", public_key);
 
-    let server_ip_cidr = format!("{}/{}", SERVERIP, CIDR);
+    let server_ip_cidr = format!("{}/{}", SERVERIP, 32);
     let server_ip: &str = &server_ip_cidr;
 
     match (

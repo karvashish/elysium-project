@@ -1,5 +1,9 @@
 use bitflags::bitflags;
-use std::{fmt, net::{Ipv4Addr, Ipv6Addr}, os::raw::c_char};
+use std::{
+    fmt,
+    net::{Ipv4Addr, Ipv6Addr},
+    os::raw::c_char,
+};
 
 //---------------------------------------------- Constants ----------------------------------------------//
 
@@ -100,7 +104,11 @@ pub struct WgPeer {
 }
 
 impl WgPeer {
-    pub fn init(public_key: WgKey, endpoint: WgEndpoint, first_allowed_ip: *mut WgAllowedIp) -> Self {
+    pub fn init(
+        public_key: WgKey,
+        endpoint: WgEndpoint,
+        first_allowed_ip: *mut WgAllowedIp,
+    ) -> Self {
         WgPeer {
             flags: WgPeerFlags::HAS_PUBLIC_KEY,
             public_key,
@@ -284,10 +292,11 @@ pub struct SockaddrIn6 {
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct WgAllowedIp {
-    pub family: u16,
-    pub cidr: u8,
-    pub ip: Ip,
-    pub next_allowed_ip: *mut WgAllowedIp,
+    family: u16,
+    _pad0: [u8; 2],
+    ip: Ip,
+    cidr: u8,
+    next_allowed_ip: *mut WgAllowedIp,
 }
 
 impl From<&str> for WgAllowedIp {
@@ -303,23 +312,25 @@ impl From<&str> for WgAllowedIp {
         if let Ok(ipv4) = ip_str.parse::<Ipv4Addr>() {
             WgAllowedIp {
                 family: AF_INET,
-                cidr,
+                _pad0: [0u8; 2],
                 ip: Ip {
                     ip4: FfiIpv4Addr {
                         octets: ipv4.octets(),
                     },
                 },
+                cidr,
                 next_allowed_ip: std::ptr::null_mut(),
             }
         } else if let Ok(ipv6) = ip_str.parse::<Ipv6Addr>() {
             WgAllowedIp {
                 family: AF_INET6,
-                cidr,
+                _pad0: [0u8; 2],
                 ip: Ip {
                     ip6: FfiIpv6Addr {
                         segments: ipv6.segments(),
                     },
                 },
+                cidr,
                 next_allowed_ip: std::ptr::null_mut(),
             }
         } else {
@@ -364,7 +375,9 @@ impl From<&str> for WgEndpoint {
                 sin6_scope_id: 0,
             };
 
-            WgEndpoint { addr6: sockaddr_in6 }
+            WgEndpoint {
+                addr6: sockaddr_in6,
+            }
         } else {
             panic!("Invalid socket address");
         }

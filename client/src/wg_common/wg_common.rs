@@ -78,9 +78,8 @@ pub fn update_device(
     let server_pub_key_int = wg_key_from_str(server_pub);
     let server_endpoint = WgEndpoint::from(s_endpoint);
     let mut server_allowed_ip = WgAllowedIp::from(s_ip);
-    let server_peer = WgPeer::init(server_pub_key_int, server_endpoint, &mut server_allowed_ip);
+    let mut server_peer = WgPeer::init(server_pub_key_int, server_endpoint, &mut server_allowed_ip);
 
-    // println!("{:?}", server_peer);
 
     unsafe {
         if wg_get_device(&mut device, c_device_name.as_ptr()) != 0 {
@@ -96,8 +95,8 @@ pub fn update_device(
         temp_dev
             .flags
             .insert(WgDeviceFlags::HAS_PRIVATE_KEY | WgDeviceFlags::HAS_LISTEN_PORT);
+        temp_dev.first_peer = &mut server_peer;
 
-        // println!("{:#?}", temp_dev);
         if wg_set_device(&mut temp_dev) != 0 {
             let err = wg_set_device(&mut temp_dev);
             println!("Failed to set device: {}", err);
