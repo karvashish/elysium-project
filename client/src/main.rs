@@ -27,7 +27,7 @@ This is the main entry point for the Elysium Project Client setup. It performs t
 4. **WireGuard Interface Management**:
    - Creates the WireGuard interface with the name specified by `IFCNAME`.
    - Updates the interface with the provided address, CIDR, and configuration.
-   - Updates the device's configuration with the generated private key and port number.
+   - Updates the device's configuration with the generated private key and port number and the peer.
    - Enables the interface.
 
 5. **Error Handling**:
