@@ -59,7 +59,6 @@ async fn main() {
         .expect("Invalid IPv4 address in ADDR");
     let cidr = CIDR.parse::<u8>().expect("Invalid CIDR value in CIDR");
 
-
     println!("Interface Name: {}", IFCNAME);
     println!("Address: {}/{}", addr, cidr);
     println!("Server Public Key: {}", SERVERPUB);

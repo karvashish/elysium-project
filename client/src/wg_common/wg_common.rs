@@ -1,9 +1,9 @@
 use super::wireguard_cffi::{wg_get_device, wg_set_device, WgDevice};
 use crate::wg_common::wireguard_cffi::{
-    wg_generate_private_key, wg_generate_public_key, wg_key_from_base64, wg_key_to_base64, wg_list_device_names, WgAllowedIp, WgDeviceFlags, WgEndpoint, WgKey, WgKeyBase64String, WgPeer
+    wg_generate_private_key, wg_generate_public_key, wg_key_from_base64, wg_key_to_base64,
+    wg_list_device_names, WgAllowedIp, WgDeviceFlags, WgEndpoint, WgKey, WgKeyBase64String, WgPeer,
 };
 use std::ffi::{CStr, CString};
-
 
 pub fn gen_private_key() -> WgKeyBase64String {
     let mut private_key_int = WgKey([0; 32]);
@@ -27,8 +27,8 @@ pub fn gen_public_key(private_key: &WgKeyBase64String) -> WgKeyBase64String {
     public_key
 }
 pub fn wg_key_from_str(input: &str) -> WgKey {
-    let key  = WgKeyBase64String::from(input);
-    let mut key_int = WgKey([0; 32]);   
+    let key = WgKeyBase64String::from(input);
+    let mut key_int = WgKey([0; 32]);
 
     unsafe {
         wg_key_from_base64(&mut key_int, &key);
@@ -36,7 +36,6 @@ pub fn wg_key_from_str(input: &str) -> WgKey {
 
     key_int
 }
-
 
 pub fn list_device_names() -> Vec<String> {
     let mut result = Vec::new();
@@ -69,7 +68,7 @@ pub fn update_device(
     device_name: &str,
     server_pub: &str,
     s_endpoint: &str,
-    s_ip: &str
+    s_ip: &str,
 ) -> Result<(), i32> {
     let c_device_name = CString::new(device_name).map_err(|_| -1)?;
     let mut device: *mut WgDevice = std::ptr::null_mut();
@@ -79,7 +78,6 @@ pub fn update_device(
     let server_endpoint = WgEndpoint::from(s_endpoint);
     let mut server_allowed_ip = WgAllowedIp::from(s_ip);
     let mut server_peer = WgPeer::init(server_pub_key_int, server_endpoint, &mut server_allowed_ip);
-
 
     unsafe {
         if wg_get_device(&mut device, c_device_name.as_ptr()) != 0 {

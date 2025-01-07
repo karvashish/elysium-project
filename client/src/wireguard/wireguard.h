@@ -17,14 +17,17 @@ typedef uint8_t wg_key[32];
 typedef char wg_key_b64_string[((sizeof(wg_key) + 2) / 3) * 4 + 1];
 
 /* Cross platform __kernel_timespec */
-struct timespec64 {
+struct timespec64
+{
 	int64_t tv_sec;
 	int64_t tv_nsec;
 };
 
-typedef struct wg_allowedip {
+typedef struct wg_allowedip
+{
 	uint16_t family;
-	union {
+	union
+	{
 		struct in_addr ip4;
 		struct in6_addr ip6;
 	};
@@ -32,7 +35,8 @@ typedef struct wg_allowedip {
 	struct wg_allowedip *next_allowedip;
 } wg_allowedip;
 
-enum wg_peer_flags {
+enum wg_peer_flags
+{
 	WGPEER_REMOVE_ME = 1U << 0,
 	WGPEER_REPLACE_ALLOWEDIPS = 1U << 1,
 	WGPEER_HAS_PUBLIC_KEY = 1U << 2,
@@ -40,13 +44,15 @@ enum wg_peer_flags {
 	WGPEER_HAS_PERSISTENT_KEEPALIVE_INTERVAL = 1U << 4
 };
 
-typedef union wg_endpoint {
+typedef union wg_endpoint
+{
 	struct sockaddr addr;
 	struct sockaddr_in addr4;
 	struct sockaddr_in6 addr6;
 } wg_endpoint;
 
-typedef struct wg_peer {
+typedef struct wg_peer
+{
 	enum wg_peer_flags flags;
 
 	wg_key public_key;
@@ -62,7 +68,8 @@ typedef struct wg_peer {
 	struct wg_peer *next_peer;
 } wg_peer;
 
-enum wg_device_flags {
+enum wg_device_flags
+{
 	WGDEVICE_REPLACE_PEERS = 1U << 0,
 	WGDEVICE_HAS_PRIVATE_KEY = 1U << 1,
 	WGDEVICE_HAS_PUBLIC_KEY = 1U << 2,
@@ -70,7 +77,8 @@ enum wg_device_flags {
 	WGDEVICE_HAS_FWMARK = 1U << 4
 };
 
-typedef struct wg_device {
+typedef struct wg_device
+{
 	char name[IFNAMSIZ];
 	uint32_t ifindex;
 

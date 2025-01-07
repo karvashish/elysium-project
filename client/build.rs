@@ -20,7 +20,15 @@ This build script performs the following tasks:
 fn main() {
     let is_release = env::var("PROFILE").unwrap_or_default() == "release";
 
-    for var in ["CLIENTPUB", "IFCNAME", "ADDR", "CIDR", "SERVERPUB", "SERVERENDPOINT", "SERVERIP"] {
+    for var in [
+        "CLIENTPUB",
+        "IFCNAME",
+        "ADDR",
+        "CIDR",
+        "SERVERPUB",
+        "SERVERENDPOINT",
+        "SERVERIP",
+    ] {
         println!("cargo:rerun-if-env-changed={}", var);
     }
 
@@ -36,7 +44,10 @@ fn main() {
 
     if is_release {
         if !missing_vars.is_empty() {
-            eprintln!("Error: Missing mandatory environment variables in release mode: {:?}", missing_vars);
+            eprintln!(
+                "Error: Missing mandatory environment variables in release mode: {:?}",
+                missing_vars
+            );
             process::exit(1);
         }
     } else {
@@ -57,11 +68,20 @@ fn main() {
         }
     }
 
-    let addr = env::var("ADDR").unwrap().parse::<std::net::Ipv4Addr>().expect("Invalid ADDR");
-    let cidr = env::var("CIDR").unwrap().parse::<u8>().expect("Invalid CIDR");
+    let addr = env::var("ADDR")
+        .unwrap()
+        .parse::<std::net::Ipv4Addr>()
+        .expect("Invalid ADDR");
+    let cidr = env::var("CIDR")
+        .unwrap()
+        .parse::<u8>()
+        .expect("Invalid CIDR");
     let server_pub = env::var("SERVERPUB").unwrap();
     let endpoint = env::var("SERVERENDPOINT").unwrap();
-    let server_ip = env::var("SERVERIP").unwrap().parse::<std::net::Ipv4Addr>().expect("Invalid SERVERIP");
+    let server_ip = env::var("SERVERIP")
+        .unwrap()
+        .parse::<std::net::Ipv4Addr>()
+        .expect("Invalid SERVERIP");
 
     let client_pub = env::var("CLIENTPUB").ok();
     if let Some(key) = &client_pub {
