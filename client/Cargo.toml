@@ -5,7 +5,7 @@ edition = "2021"
  
 [dependencies]
 rtnetlink = "0.14.1"
-tokio = { version = "1.42.0", features = ["net", "rt", "macros"] }
+tokio = { version = "1.43.0", features = ["net", "rt", "macros"] }
 futures-util = "0.3.31"
 bitflags = "2.0"
 
