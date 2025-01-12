@@ -44,7 +44,7 @@ impl fmt::Debug for WgDeviceFlags {
             active_flags.push("HAS_FWMARK");
         }
 
-        write!(f, "WgDeviceFlags({})\n", active_flags.join(" | "))
+        writeln!(f, "WgDeviceFlags({})\n", active_flags.join(" | "))
     }
 }
 
@@ -80,7 +80,7 @@ impl fmt::Debug for WgPeerFlags {
             active_flags.push("HAS_PERSISTENT_KEEPALIVE_INTERVAL");
         }
 
-        write!(f, "WgPeerFlags({})\n", active_flags.join(" | "))
+        writeln!(f, "WgPeerFlags({})\n", active_flags.join(" | "))
     }
 }
 
