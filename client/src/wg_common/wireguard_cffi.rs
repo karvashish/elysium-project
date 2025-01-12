@@ -16,12 +16,12 @@ bitflags! {
     #[repr(transparent)]
     #[derive(Clone, Copy, PartialEq, Eq)]
     pub struct WgDeviceFlags: u32 {
-        const REPLACE_PEERS = 1 << 0;
-        const HAS_PRIVATE_KEY = 1 << 1;
-        const HAS_PUBLIC_KEY = 1 << 2;
-        const HAS_LISTEN_PORT = 1 << 3;
-        const HAS_FWMARK = 1 << 4;
-    }
+    const REPLACE_PEERS = 1 << 0;
+    const HAS_PRIVATE_KEY = 1 << 1;
+    const HAS_PUBLIC_KEY = 1 << 2;
+    const HAS_LISTEN_PORT = 1 << 3;
+    const HAS_FWMARK = 1 << 4;
+}
 }
 
 impl fmt::Debug for WgDeviceFlags {
@@ -52,12 +52,12 @@ bitflags! {
     #[repr(transparent)]
     #[derive(Clone, Copy, PartialEq, Eq)]
     pub struct WgPeerFlags: u32 {
-        const REMOVE_ME = 1 << 0;
-        const REPLACE_ALLOWEDIPS = 1 << 1;
-        const HAS_PUBLIC_KEY = 1 << 2;
-        const HAS_PRESHARED_KEY = 1 << 3;
-        const HAS_PERSISTENT_KEEPALIVE_INTERVAL = 1 << 4;
-    }
+    const REMOVE_ME = 1 << 0;
+    const REPLACE_ALLOWEDIPS = 1 << 1;
+    const HAS_PUBLIC_KEY = 1 << 2;
+    const HAS_PRESHARED_KEY = 1 << 3;
+    const HAS_PERSISTENT_KEEPALIVE_INTERVAL = 1 << 4;
+}
 }
 
 impl fmt::Debug for WgPeerFlags {
@@ -170,8 +170,8 @@ impl fmt::Debug for WgEndpoint {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub union Ip {
-    pub ip4: FfiIpv4Addr,
-    pub ip6: FfiIpv6Addr,
+    pub ip4: [u8;4],
+    pub ip6:  [u16;8],
 }
 
 impl fmt::Debug for Ip {
@@ -186,47 +186,6 @@ impl fmt::Debug for Ip {
 
 //---------------------------------------------- Helper Structs ----------------------------------------------//
 
-/// A wrapper for an IPv4 address compatible with FFI.
-#[repr(C)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct FfiIpv4Addr {
-    pub octets: [u8; 4],
-}
-
-impl From<Ipv4Addr> for FfiIpv4Addr {
-    fn from(ip: Ipv4Addr) -> Self {
-        FfiIpv4Addr {
-            octets: ip.octets(),
-        }
-    }
-}
-
-impl From<FfiIpv4Addr> for Ipv4Addr {
-    fn from(ip: FfiIpv4Addr) -> Self {
-        Ipv4Addr::from(ip.octets)
-    }
-}
-
-/// A wrapper for an IPv6 address compatible with FFI.
-#[repr(C)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct FfiIpv6Addr {
-    pub segments: [u16; 8],
-}
-
-impl From<Ipv6Addr> for FfiIpv6Addr {
-    fn from(ip: Ipv6Addr) -> Self {
-        FfiIpv6Addr {
-            segments: ip.segments(),
-        }
-    }
-}
-
-impl From<FfiIpv6Addr> for Ipv6Addr {
-    fn from(ip: FfiIpv6Addr) -> Self {
-        Ipv6Addr::from(ip.segments)
-    }
-}
 
 /// A wrapper for a WireGuard key.
 #[repr(C)]
@@ -271,7 +230,7 @@ pub struct Sockaddr {
 pub struct SockaddrIn {
     pub sin_family: u16,
     pub sin_port: u16,
-    pub sin_addr: FfiIpv4Addr,
+    pub sin_addr: [u8; 4],
     pub sin_zero: [u8; 8],
 }
 
@@ -282,7 +241,7 @@ pub struct SockaddrIn6 {
     pub sin6_family: u16,
     pub sin6_port: u16,
     pub sin6_flowinfo: u32,
-    pub sin6_addr: FfiIpv6Addr,
+    pub sin6_addr: [u16;8],
     pub sin6_scope_id: u32,
 }
 
@@ -305,11 +264,7 @@ impl From<&str> for WgAllowedIp {
             WgAllowedIp {
                 family: AF_INET,
                 _pad0: [0u8; 2],
-                ip: Ip {
-                    ip4: FfiIpv4Addr {
-                        octets: ipv4.octets(),
-                    },
-                },
+                ip: Ip { ip4: ipv4.octets() },
                 cidr: 32 as u8,
                 next_allowed_ip: std::ptr::null_mut(),
             }
@@ -317,11 +272,7 @@ impl From<&str> for WgAllowedIp {
             WgAllowedIp {
                 family: AF_INET6,
                 _pad0: [0u8; 2],
-                ip: Ip {
-                    ip6: FfiIpv6Addr {
-                        segments: ipv6.segments(),
-                    },
-                },
+                ip: Ip { ip6: ipv6.segments() },
                 cidr: 128 as u8,
                 next_allowed_ip: std::ptr::null_mut(),
             }
@@ -350,7 +301,7 @@ impl From<&str> for WgEndpoint {
             let sockaddr_in = SockaddrIn {
                 sin_family: AF_INET,
                 sin_port: port.to_be(),
-                sin_addr: FfiIpv4Addr { octets: ip },
+                sin_addr:  ip ,
                 sin_zero: [0u8; 8],
             };
 
@@ -363,7 +314,7 @@ impl From<&str> for WgEndpoint {
                 sin6_family: AF_INET6,
                 sin6_port: port.to_be(),
                 sin6_flowinfo: 0,
-                sin6_addr: FfiIpv6Addr { segments: ip },
+                sin6_addr: ip ,
                 sin6_scope_id: 0,
             };
 
@@ -379,11 +330,11 @@ impl From<&str> for WgEndpoint {
 //---------------------------------------------- FFI Functions ----------------------------------------------//
 
 extern "C" {
-    pub fn wg_generate_private_key(private_key: *mut WgKey);
-    pub fn wg_key_to_base64(wg_key_b64_string: *mut WgKeyBase64String, wg_key_int: *const WgKey);
-    pub fn wg_key_from_base64(wg_key_int: *mut WgKey, wg_key_b64_string: *const WgKeyBase64String);
-    pub fn wg_generate_public_key(public_key: *mut WgKey, private_key: *const WgKey);
-    pub fn wg_list_device_names() -> *const c_char;
-    pub fn wg_get_device(dev: *mut *mut WgDevice, device_name: *const c_char) -> i32;
-    pub fn wg_set_device(dev: *mut WgDevice) -> i32;
+pub fn wg_generate_private_key(private_key: *mut WgKey);
+pub fn wg_key_to_base64(wg_key_b64_string: *mut WgKeyBase64String, wg_key_int: *const WgKey);
+pub fn wg_key_from_base64(wg_key_int: *mut WgKey, wg_key_b64_string: *const WgKeyBase64String);
+pub fn wg_generate_public_key(public_key: *mut WgKey, private_key: *const WgKey);
+pub fn wg_list_device_names() -> *const c_char;
+pub fn wg_get_device(dev: *mut *mut WgDevice, device_name: *const c_char) -> i32;
+pub fn wg_set_device(dev: *mut WgDevice) -> i32;
 }
