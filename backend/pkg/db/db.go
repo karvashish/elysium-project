@@ -17,7 +17,7 @@ func InitializeDatabaseConnection() *sql.DB {
 		log.Println("db.InitializeDatabaseConnection -> called")
 	}
 
-	dsn := constructDSN()
+	dsn := config.GetEnv("DB_NAME", "elysium.db")
 
 	dbPool, err := sql.Open("sqlite3", dsn)
 	if err != nil {
@@ -26,16 +26,6 @@ func InitializeDatabaseConnection() *sql.DB {
 
 	log.Println("db.InitializeDatabaseConnection -> Successfully connected to SQLite database")
 	return dbPool
-}
-
-func constructDSN() string {
-	if config.GetLogLevel() == "DEBUG" {
-		log.Println("db.constructDSN -> called")
-	}
-
-	dbName := config.GetEnv("POSTGRES_DB", "elysium.db")
-
-	return dbName
 }
 
 func CloseDatabaseConnection() {
