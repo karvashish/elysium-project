@@ -80,7 +80,7 @@ func CompileClient(pubKey string, target models.OSArch) (string, error) {
 	args := append([]string{"build", "--release", "--target", string(target)}, compileArgs...)
 	cmd := exec.Command("cargo", args...)
 	cmd.Dir = clientDir
-	cmd.Env = append(os.Environ(), "PUBKEY="+pubKey)
+	cmd.Env = append(os.Environ(), "ADDR=10.0.0.2", "CIDR="+fmt.Sprint(24), "SERVERPUB="+pubKey, "SERVERENDPOINT=192.168.0.1:51820", "SERVERIP=10.0.0.1")
 	if target == models.OSArchx86_64Linux {
 		cmd.Env = append(cmd.Env, "RUSTFLAGS=-C linker=x86_64-linux-gnu-gcc")
 	}

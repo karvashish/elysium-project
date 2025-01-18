@@ -1,38 +1,35 @@
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    username VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    api_key VARCHAR(255),
-    api_key_expiry TIMESTAMP
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-8' || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))),
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    api_key TEXT,
+    api_key_expiry TEXT
 );
 
 CREATE TABLE IF NOT EXISTS peers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    public_key VARCHAR(44) NOT NULL,
-    assigned_ip INET NOT NULL UNIQUE,
-    status VARCHAR(20),
-    is_gateway BOOLEAN DEFAULT FALSE,
-    metadata JSONB,
-    created_on TIMESTAMPTZ DEFAULT NULL
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-8' || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))),
+    public_key TEXT NOT NULL,
+    assigned_ip TEXT NOT NULL UNIQUE,
+    status TEXT,
+    is_gateway INTEGER DEFAULT 0,
+    metadata TEXT,
+    created_on TEXT DEFAULT NULL
 );
 
 CREATE TABLE IF NOT EXISTS tokens (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    requesting_peer_id UUID REFERENCES peers(id),
-    target_peer_id UUID REFERENCES peers(id),
-    token VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    expired_at TIMESTAMP NOT NULL,
-    is_valid BOOLEAN DEFAULT TRUE
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-8' || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))),
+    requesting_peer_id TEXT REFERENCES peers(id),
+    target_peer_id TEXT REFERENCES peers(id),
+    token TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    expired_at TEXT NOT NULL,
+    is_valid INTEGER DEFAULT 1
 );
 
 INSERT INTO users (id, username, password_hash) 
 VALUES (
-    uuid_generate_v4(), 
+    lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-8' || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6))), 
     'hades', 
-    crypt('12345678', gen_salt('bf'))
+    (SELECT hex(randomblob(16)))
 )
 ON CONFLICT (username) DO NOTHING;

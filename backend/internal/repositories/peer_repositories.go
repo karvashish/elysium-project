@@ -22,7 +22,7 @@ func InsertPeer(peer *models.Peer) error {
 	`
 	ctx := context.Background()
 
-	err := db.DBPool.QueryRow(ctx, query, peer.PublicKey, peer.AssignedIP, peer.Status, peer.IsGateway, peer.CreatedOn).Scan(&peer.ID)
+	err := db.DBPool.QueryRowContext(ctx, query, peer.PublicKey, peer.AssignedIP, peer.Status, peer.IsGateway, peer.CreatedOn).Scan(&peer.ID)
 	if err != nil {
 		log.Println("repositories.InsertPeer -> Error inserting peer:", err)
 		return err
@@ -43,7 +43,7 @@ func GetPeer(id uuid.UUID) (*models.Peer, error) {
 	ctx := context.Background()
 	peer := &models.Peer{}
 
-	row := db.DBPool.QueryRow(ctx, query, id)
+	row := db.DBPool.QueryRowContext(ctx, query, id)
 	err := row.Scan(&peer.ID, &peer.PublicKey, &peer.AssignedIP, &peer.Status, &peer.IsGateway, &peer.Metadata, &peer.CreatedOn)
 	if err != nil {
 		log.Println("repositories.GetPeer -> Error retrieving peer:", err)

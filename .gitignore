@@ -1,4 +1,7 @@
 /backend/main
+/backend/elysium
+/backend/compiled_binaries
+/backend/tmp
 /backend/config/keys/*
 /client/target/
 /containers/postgresql/data/

@@ -1,35 +1,30 @@
 package db
 
 import (
-	"context"
+	"database/sql"
 	"elysium-backend/config"
 	"log"
 	"os"
 	"path/filepath"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	_ "github.com/mattn/go-sqlite3"
 )
 
-var DBPool *pgxpool.Pool
+var DBPool *sql.DB
 
-func InitializeDatabaseConnection() *pgxpool.Pool {
+func InitializeDatabaseConnection() *sql.DB {
 	if config.GetLogLevel() == "DEBUG" {
 		log.Println("db.InitializeDatabaseConnection -> called")
 	}
 
 	dsn := constructDSN()
 
-	poolConfig, err := pgxpool.ParseConfig(dsn)
-	if err != nil {
-		log.Fatalf("db.InitializeDatabaseConnection -> error parsing database connection string: %v", err)
-	}
-
-	dbPool, err := pgxpool.ConnectConfig(context.Background(), poolConfig)
+	dbPool, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		log.Fatalf("db.InitializeDatabaseConnection -> error connecting to the database: %v", err)
 	}
 
-	log.Println("db.InitializeDatabaseConnection -> Successfully connected to PostgreSQL database")
+	log.Println("db.InitializeDatabaseConnection -> Successfully connected to SQLite database")
 	return dbPool
 }
 
@@ -38,13 +33,9 @@ func constructDSN() string {
 		log.Println("db.constructDSN -> called")
 	}
 
-	dbUser := config.GetEnv("POSTGRES_USER", "")
-	dbPassword := config.GetEnv("POSTGRES_PASSWORD", "")
-	dbName := config.GetEnv("POSTGRES_DB", "")
-	dbHost := config.GetEnv("DB_HOST", "localhost")
-	dbPort := config.GetEnv("DB_PORT", "5432")
+	dbName := config.GetEnv("POSTGRES_DB", "elysium.db")
 
-	return "postgresql://" + dbUser + ":" + dbPassword + "@" + dbHost + ":" + dbPort + "/" + dbName
+	return dbName
 }
 
 func CloseDatabaseConnection() {
@@ -63,9 +54,9 @@ func RunMigrations(migrationDir string) error {
 		log.Println("db.RunMigrations -> called with migrationDir:", migrationDir)
 	}
 
-	_, err := DBPool.Exec(context.Background(), `
+	_, err := DBPool.Exec(`
 		CREATE TABLE IF NOT EXISTS migrations (
-			id SERIAL PRIMARY KEY,
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			filename TEXT UNIQUE,
 			applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
@@ -84,9 +75,9 @@ func RunMigrations(migrationDir string) error {
 	for _, file := range files {
 		if filepath.Ext(file.Name()) == ".sql" {
 			var exists bool
-			err := DBPool.QueryRow(context.Background(), `
+			err := DBPool.QueryRow(`
 				SELECT EXISTS (
-					SELECT 1 FROM migrations WHERE filename = $1
+					SELECT 1 FROM migrations WHERE filename = ?
 				)
 			`, file.Name()).Scan(&exists)
 			if err != nil {
@@ -106,14 +97,14 @@ func RunMigrations(migrationDir string) error {
 				return err
 			}
 
-			_, err = DBPool.Exec(context.Background(), string(query))
+			_, err = DBPool.Exec(string(query))
 			if err != nil {
 				log.Println("db.RunMigrations -> error applying migration", file.Name(), ":", err)
 				return err
 			}
 
-			_, err = DBPool.Exec(context.Background(), `
-				INSERT INTO migrations (filename) VALUES ($1)
+			_, err = DBPool.Exec(`
+				INSERT INTO migrations (filename) VALUES (?)
 			`, file.Name())
 			if err != nil {
 				log.Println("db.RunMigrations -> error recording applied migration", file.Name(), ":", err)
