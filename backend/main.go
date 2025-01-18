@@ -42,7 +42,9 @@ func setupDatabase() {
 func setupWireGuard(setupWg *bool) {
 	if config.GetLogLevel() == "DEBUG" {
 		log.Println("main.setupWireGuard -> called")
-	} else if !*setupWg {
+	}
+
+	if !*setupWg {
 		log.Println("main.setupWireGuard -> Skipping wireguard interface setup")
 		return
 	}
