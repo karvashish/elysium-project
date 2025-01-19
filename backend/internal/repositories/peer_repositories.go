@@ -2,11 +2,13 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"elysium-backend/config"
 	"elysium-backend/internal/models"
 	"elysium-backend/pkg/db"
 	"fmt"
 	"log"
+	"net"
 	"strings"
 	"time"
 
@@ -32,6 +34,28 @@ func InsertPeer(peer *models.Peer) error {
 	}
 	log.Println("repositories.InsertPeer -> peer:", peer.ID)
 	return nil
+}
+
+func IsIpAvailable(ip net.IP) (bool, error) {
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("repositories.IsIpAvailable -> called with ", ip.String())
+	}
+
+	query := `SELECT 1 FROM peers WHERE assigned_ip = $1`
+	ctx := context.Background()
+
+	var exists int
+	err := db.DBPool.QueryRowContext(ctx, query, ip).Scan(&exists)
+	if err == sql.ErrNoRows {
+		log.Println("IsIpAvailable -> Ip ", ip.String(), "is available")
+		return true, nil
+	} else if err != nil {
+		log.Println("IsIpAvailable -> Error:", err)
+		return false, err
+	}
+
+	log.Println("IsIpAvailable -> Ip ", ip.String(), "is already taken")
+	return false, nil
 }
 
 func GetPeer(id uuid.UUID) (*models.Peer, error) {

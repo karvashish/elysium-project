@@ -43,12 +43,8 @@ func InsertPeer(newPeer *models.Peer) error {
 	return nil
 }
 
-func AssignNewIP(newPeer *models.Peer) error {
-	if config.GetLogLevel() == "DEBUG" {
-		log.Println("services.assignNewIP -> called")
-	}
-
-	hash := sha256.Sum256([]byte(newPeer.CreatedOn.String()))
+func timeToIp(time *time.Time) net.IP {
+	hash := sha256.Sum256([]byte(time.String()))
 	hash_int := new(big.Int).SetBytes(hash[:])
 
 	index := new(big.Int).
@@ -68,11 +64,38 @@ func AssignNewIP(newPeer *models.Peer) error {
 	binary.BigEndian.PutUint32(ipBytes, uint32(allocated_ip_int))
 
 	allocatedIP := net.IP(ipBytes)
+	return allocatedIP
+}
 
-	log.Println("services.assignNewIP -> Allocated IP: ", allocatedIP)
+func AssignNewIP(newPeer *models.Peer) error {
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("services.assignNewIP -> called")
+	}
 
-	newPeer.AssignedIP = allocatedIP
-	return nil
+	allocatedIP := timeToIp(&newPeer.CreatedOn)
+
+	is_avail, _ := repositories.IsIpAvailable(allocatedIP)
+
+	if is_avail {
+		log.Println("services.assignNewIP -> IP Allocated")
+		newPeer.AssignedIP = allocatedIP
+		return nil
+	} else {
+		retry := 0
+		for retry < 100 {
+			retry++
+			adjustedTime := newPeer.CreatedOn.Add(time.Duration(retry) * time.Millisecond)
+			allocatedIP = timeToIp(&adjustedTime)
+
+			is_avail, _ = repositories.IsIpAvailable(allocatedIP)
+			if is_avail {
+				log.Println("services.assignNewIP -> IP Allocated")
+				newPeer.AssignedIP = allocatedIP
+				return nil
+			}
+		}
+		return fmt.Errorf("services.assignNewIP -> Error no available IP after 10 retries")
+	}
 }
 
 func GetPeer(peerID *uuid.UUID) (*models.Peer, error) {
@@ -92,6 +115,7 @@ func CompileClient(pubKey string, target models.OSArch, assignedIp net.IP) (stri
 	if config.GetLogLevel() == "DEBUG" {
 		log.Println("services.CompileClient -> called")
 	}
+	serverIp := config.GetEnv("BACKEND_WG_IP", "10.0.0.1")
 
 	if err := target.Validate(); err != nil {
 		log.Println("services.CompileClient -> invalid target:", err)
@@ -115,7 +139,7 @@ func CompileClient(pubKey string, target models.OSArch, assignedIp net.IP) (stri
 		"CIDR="+fmt.Sprint(24),
 		"SERVERPUB="+pubKey,
 		"SERVERENDPOINT=192.168.0.1:51820",
-		"SERVERIP=10.0.0.1",
+		"SERVERIP="+serverIp,
 	)
 	if target == models.OSArchx86_64Linux {
 		cmd.Env = append(cmd.Env, "RUSTFLAGS=-C linker=x86_64-linux-gnu-gcc")
