@@ -20,16 +20,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type Ip_Range struct {
-	name  string
-	start net.IP
-	end   net.IP
-}
-
-var ip_ranges []Ip_Range = []Ip_Range{
-	{name: "range1", start: net.IPv4(10, 0, 0, 2), end: net.IPv4(10, 0, 0, 255)},
-}
-
 func InsertPeer(newPeer *models.Peer) error {
 	if config.GetLogLevel() == "DEBUG" {
 		log.Println("services.InsertPeer -> called")
@@ -47,14 +37,16 @@ func timeToIp(time *time.Time) net.IP {
 	hash := sha256.Sum256([]byte(time.String()))
 	hash_int := new(big.Int).SetBytes(hash[:])
 
+	ip_ranges := config.GetIpRanges()
+
 	index := new(big.Int).
 		Mod(hash_int, big.NewInt(int64(len(ip_ranges)))).
 		Int64()
 
 	selectedRange := ip_ranges[index]
 
-	range_start := new(big.Int).SetBytes(selectedRange.start.To4()).Int64()
-	range_end := new(big.Int).SetBytes(selectedRange.end.To4()).Int64()
+	range_start := new(big.Int).SetBytes(selectedRange.Start.To4()).Int64()
+	range_end := new(big.Int).SetBytes(selectedRange.End.To4()).Int64()
 	range_size := range_end - range_start + 1
 
 	ip_offset := new(big.Int).Mod(hash_int, big.NewInt(range_size)).Int64()
