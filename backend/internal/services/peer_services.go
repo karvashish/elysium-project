@@ -2,11 +2,14 @@ package services
 
 import (
 	"bufio"
+	"crypto/sha256"
 	"elysium-backend/config"
 	"elysium-backend/internal/models"
 	"elysium-backend/internal/repositories"
+	"encoding/binary"
 	"fmt"
 	"log"
+	"math/big"
 	"net"
 	"os"
 	"os/exec"
@@ -17,17 +20,19 @@ import (
 	"github.com/google/uuid"
 )
 
+type Ip_Range struct {
+	name  string
+	start net.IP
+	end   net.IP
+}
+
+var ip_ranges []Ip_Range = []Ip_Range{
+	{name: "range1", start: net.IPv4(10, 0, 0, 2), end: net.IPv4(10, 0, 0, 255)},
+}
+
 func InsertPeer(newPeer *models.Peer) error {
 	if config.GetLogLevel() == "DEBUG" {
 		log.Println("services.InsertPeer -> called")
-	}
-
-	if newPeer.AssignedIP == nil {
-		log.Println("services.InsertPeer -> IP not assigned, requesting new IP")
-		if err := assignNewIP(newPeer); err != nil {
-			log.Println("services.InsertPeer -> Error assigning new IP:", err)
-			return err
-		}
 	}
 
 	if err := repositories.InsertPeer(newPeer); err != nil {
@@ -38,11 +43,35 @@ func InsertPeer(newPeer *models.Peer) error {
 	return nil
 }
 
-func assignNewIP(newPeer *models.Peer) error {
+func AssignNewIP(newPeer *models.Peer) error {
 	if config.GetLogLevel() == "DEBUG" {
 		log.Println("services.assignNewIP -> called")
 	}
-	newPeer.AssignedIP = net.ParseIP("10.0.0.2")
+
+	hash := sha256.Sum256([]byte(newPeer.CreatedOn.String()))
+	hash_int := new(big.Int).SetBytes(hash[:])
+
+	index := new(big.Int).
+		Mod(hash_int, big.NewInt(int64(len(ip_ranges)))).
+		Int64()
+
+	selectedRange := ip_ranges[index]
+
+	range_start := new(big.Int).SetBytes(selectedRange.start.To4()).Int64()
+	range_end := new(big.Int).SetBytes(selectedRange.end.To4()).Int64()
+	range_size := range_end - range_start + 1
+
+	ip_offset := new(big.Int).Mod(hash_int, big.NewInt(range_size)).Int64()
+	allocated_ip_int := range_start + ip_offset
+
+	ipBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(ipBytes, uint32(allocated_ip_int))
+
+	allocatedIP := net.IP(ipBytes)
+
+	log.Println("services.assignNewIP -> Allocated IP: ", allocatedIP)
+
+	newPeer.AssignedIP = allocatedIP
 	return nil
 }
 
@@ -59,7 +88,7 @@ func GetPeer(peerID *uuid.UUID) (*models.Peer, error) {
 	return peer, nil
 }
 
-func CompileClient(pubKey string, target models.OSArch) (string, error) {
+func CompileClient(pubKey string, target models.OSArch, assignedIp net.IP) (string, error) {
 	if config.GetLogLevel() == "DEBUG" {
 		log.Println("services.CompileClient -> called")
 	}
@@ -80,7 +109,14 @@ func CompileClient(pubKey string, target models.OSArch) (string, error) {
 	args := append([]string{"build", "--release", "--target", string(target)}, compileArgs...)
 	cmd := exec.Command("cargo", args...)
 	cmd.Dir = clientDir
-	cmd.Env = append(os.Environ(), "ADDR=10.0.0.2", "CIDR="+fmt.Sprint(24), "SERVERPUB="+pubKey, "SERVERENDPOINT=192.168.0.1:51820", "SERVERIP=10.0.0.1")
+	cmd.Env = append(
+		os.Environ(),
+		"ADDR="+assignedIp.String(),
+		"CIDR="+fmt.Sprint(24),
+		"SERVERPUB="+pubKey,
+		"SERVERENDPOINT=192.168.0.1:51820",
+		"SERVERIP=10.0.0.1",
+	)
 	if target == models.OSArchx86_64Linux {
 		cmd.Env = append(cmd.Env, "RUSTFLAGS=-C linker=x86_64-linux-gnu-gcc")
 	}

@@ -5,7 +5,10 @@ import (
 	"elysium-backend/config"
 	"elysium-backend/internal/models"
 	"elysium-backend/pkg/db"
+	"fmt"
 	"log"
+	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -27,6 +30,7 @@ func InsertPeer(peer *models.Peer) error {
 		log.Println("repositories.InsertPeer -> Error inserting peer:", err)
 		return err
 	}
+	log.Println("repositories.InsertPeer -> peer:", peer.ID)
 	return nil
 }
 
@@ -43,11 +47,25 @@ func GetPeer(id uuid.UUID) (*models.Peer, error) {
 	ctx := context.Background()
 	peer := &models.Peer{}
 
+	var createdOnStr string
+
 	row := db.DBPool.QueryRowContext(ctx, query, id)
-	err := row.Scan(&peer.ID, &peer.PublicKey, &peer.AssignedIP, &peer.Status, &peer.IsGateway, &peer.Metadata, &peer.CreatedOn)
+	err := row.Scan(&peer.ID, &peer.PublicKey, &peer.AssignedIP, &peer.Status, &peer.IsGateway, &peer.Metadata, &createdOnStr)
 	if err != nil {
 		log.Println("repositories.GetPeer -> Error retrieving peer:", err)
 		return nil, err
 	}
+
+	if createdOnStr == "" {
+		log.Println("repositories.GetPeer -> created_on is empty or null")
+		return nil, fmt.Errorf("created_on is empty or null")
+	}
+
+	peer.CreatedOn, err = time.Parse(time.RFC3339, strings.Replace(createdOnStr, " ", "T", 1))
+	if err != nil {
+		log.Println("repositories.GetPeer -> Error parsing created_on:", err)
+		return nil, err
+	}
+
 	return peer, nil
 }

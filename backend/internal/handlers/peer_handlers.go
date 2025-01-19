@@ -56,18 +56,23 @@ func PostPeerHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("handlers.PostPeerHandler -> Received PublicKey from", r.RemoteAddr)
 	}
 
-	exePath, err := services.CompileClient(*peer_request.PublicKey, peer_request.OSArch)
-	if err != nil {
-		http.Error(w, "Compilation failed: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	new_peer := models.Peer{
 		PublicKey:  *peer_request.PublicKey,
 		AssignedIP: nil,
 		Status:     "pending",
 		IsGateway:  false,
 		CreatedOn:  time.Now().UTC(),
+	}
+
+	log.Println("handlers.PostPeerHandler -> requesting new IP")
+	if err := services.AssignNewIP(&new_peer); err != nil {
+		http.Error(w, "Unable to assign IP", http.StatusInternalServerError)
+	}
+
+	exePath, err := services.CompileClient(*peer_request.PublicKey, peer_request.OSArch, new_peer.AssignedIP)
+	if err != nil {
+		http.Error(w, "Compilation failed: "+err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	if err := services.InsertPeer(&new_peer); err != nil {
