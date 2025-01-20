@@ -21,7 +21,7 @@ var range_max int64 = 256
 
 var logLevel string
 
-var Ip_ranges []Ip_Range
+var ip_ranges []Ip_Range
 
 func setLogLevel() {
 	logLevel = GetEnv("LOG_LEVEL", "INFO")
@@ -32,7 +32,7 @@ func GetLogLevel() string {
 }
 
 func GetIpRanges() []Ip_Range {
-	return Ip_ranges
+	return ip_ranges
 }
 
 func LoadEnv(provided_path string) {
@@ -41,8 +41,8 @@ func LoadEnv(provided_path string) {
 		log.Println("No .env file found, using default environment variables")
 	}
 	setLogLevel()
-	Ip_ranges, _ = GenerateIPRanges(GetEnv("BACKEND_WG_IP", "10.0.0.1"), GetEnv("WG_NETWORK_MASK", "/24"))
-	for i, r := range Ip_ranges {
+	ip_ranges, _ = generateIPRanges(GetEnv("BACKEND_WG_IP", "10.0.0.1"), GetEnv("WG_NETWORK_MASK", "/24"))
+	for i, r := range ip_ranges {
 		fmt.Printf("Range %d: Start = %s, End = %s\n", i+1, r.Start.String(), r.End.String())
 	}
 
@@ -55,7 +55,7 @@ func GetEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-func GenerateIPRanges(serverIP, mask string) ([]Ip_Range, error) {
+func generateIPRanges(serverIP, mask string) ([]Ip_Range, error) {
 	_, ipNet, err := net.ParseCIDR(serverIP + mask)
 	if err != nil {
 		return nil, err
