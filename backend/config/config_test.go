@@ -77,7 +77,7 @@ func TestGenerateIPRanges(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ranges, err := GenerateIPRanges(tt.serverIP, tt.mask)
+			ranges, err := generateIPRanges(tt.serverIP, tt.mask)
 			if (err != nil) != tt.expectErr {
 				t.Fatalf("unexpected error: %v", err)
 			}
