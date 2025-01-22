@@ -24,11 +24,21 @@ func PeerRoutes(mux *mux.Router) {
 		}
 	})
 
-	mux.HandleFunc("/peers/{id}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/peer/{id}", func(w http.ResponseWriter, r *http.Request) {
 		log.Println("------------------------------------------------------------------------------")
-		log.Println("routes.PeerRoutes -> handling request for /peers/{id}")
+		log.Println("routes.PeerRoutes -> handling request for /peer/{id}")
 		if r.Method == http.MethodGet {
 			handlers.GetPeerHandler(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	mux.HandleFunc("/peers", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("------------------------------------------------------------------------------")
+		log.Println("routes.PeerRoutes -> handling request for /peers")
+		if r.Method == http.MethodGet {
+			handlers.GetAllPeersHandler(w, r)
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}

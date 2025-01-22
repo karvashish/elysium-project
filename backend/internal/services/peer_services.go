@@ -86,7 +86,7 @@ func AssignNewIP(newPeer *models.Peer) error {
 				return nil
 			}
 		}
-		return fmt.Errorf("services.assignNewIP -> Error no available IP after 10 retries")
+		return fmt.Errorf("services.assignNewIP -> Error no available IP after 100 retries")
 	}
 }
 
@@ -101,6 +101,21 @@ func GetPeer(peerID *uuid.UUID) (*models.Peer, error) {
 		return nil, err
 	}
 	return peer, nil
+}
+
+func GetAllPeer() ([]models.Peer, error) {
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("services.GetAllPeer -> called")
+	}
+
+	peers, err := repositories.GetAllPeer()
+	if err != nil {
+		log.Println("services.GetAllPeer -> Error retrieving peers:", err)
+		return nil, err
+	}
+	log.Printf("services.GetAllPeer -> retrived %d peers\n", len(peers))
+
+	return peers, nil
 }
 
 func CompileClient(pubKey string, target models.OSArch, assignedIp net.IP) (string, error) {

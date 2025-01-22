@@ -93,3 +93,51 @@ func GetPeer(id uuid.UUID) (*models.Peer, error) {
 
 	return peer, nil
 }
+
+func GetAllPeer() ([]models.Peer, error) {
+	if config.GetLogLevel() == "DEBUG" {
+		log.Println("repositories.GetAllPeer -> called")
+	}
+
+	var results []models.Peer
+
+	query := `
+		SELECT id, public_key, assigned_ip, status, is_gateway, metadata, created_on
+		FROM peers
+	`
+	ctx := context.Background()
+
+	rows, err := db.DBPool.QueryContext(ctx, query)
+	if err != nil {
+		log.Println("repositories.GetAllPeer -> Error retrieving peers:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+
+		peer := &models.Peer{}
+
+		var createdOnStr string
+		err := rows.Scan(&peer.ID, &peer.PublicKey, &peer.AssignedIP, &peer.Status, &peer.IsGateway, &peer.Metadata, &createdOnStr)
+		if err != nil {
+			log.Println("repositories.GetAllPeer -> Error retrieving peer:", err)
+			return nil, err
+		}
+
+		if createdOnStr == "" {
+			log.Println("repositories.GetAllPeer -> created_on is empty or null")
+			return nil, fmt.Errorf("created_on is empty or null")
+		}
+
+		peer.CreatedOn, err = time.Parse(time.RFC3339, strings.Replace(createdOnStr, " ", "T", 1))
+		if err != nil {
+			log.Println("repositories.GetAllPeer -> Error parsing created_on:", err)
+			return nil, err
+		}
+
+		results = append(results, *peer)
+	}
+
+	return results, nil
+}

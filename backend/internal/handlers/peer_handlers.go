@@ -12,6 +12,23 @@ import (
 	"github.com/gorilla/mux"
 )
 
+func GetAllPeersHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("handlers.GetAllPeersHandler  -> Processing request from", r.RemoteAddr)
+
+	res, err := services.GetAllPeer()
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	}
+
+}
+
 func GetPeerHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("handlers.GetPeerHandler  -> Processing request from", r.RemoteAddr)
 
