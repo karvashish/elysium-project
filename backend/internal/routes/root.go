@@ -1,19 +1,19 @@
 package routes
 
 import (
-	"elysium-backend/internal/handlers"
+  "elysium-backend/internal/handlers"
 
-	"github.com/gorilla/mux"
+  "github.com/gorilla/mux"
 )
 
 func SetupRoutes() *mux.Router {
-	router := mux.NewRouter()
+  router := mux.NewRouter()
 
-	router.HandleFunc("/", handlers.BaseHandler)
+  router.HandleFunc("/", handlers.BaseHandler)
 
-	PeerRoutes(router)
+  PeerRoutes(router)
 
-	DownloadRoutes(router)
+  DownloadRoutes(router)
 
-	return router
+  return router
 }

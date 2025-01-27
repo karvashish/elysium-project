@@ -1,32 +1,32 @@
 package routes
 
 import (
-	"elysium-backend/config"
-	"elysium-backend/internal/handlers"
-	"log"
-	"net/http"
+  "elysium-backend/config"
+  "elysium-backend/internal/handlers"
+  "log"
+  "net/http"
 
-	"github.com/gorilla/mux"
+  "github.com/gorilla/mux"
 )
 
 func DownloadRoutes(router *mux.Router) {
-	if config.GetLogLevel() == "DEBUG" {
-		log.Println("routes.DownloadRoutes -> called")
-	}
+  if config.GetLogLevel() == "DEBUG" {
+    log.Println("routes.DownloadRoutes -> called")
+  }
 
-	router.HandleFunc("/downloads/{uniqueID}/{filename}", func(w http.ResponseWriter, r *http.Request) {
-		log.Println("------------------------------------------------------------------------------")
-		log.Println("routes.DownloadRoutes -> handling request for /downloads/{uniqueID}/{filename}")
+  router.HandleFunc("/downloads/{uniqueID}/{filename}", func(w http.ResponseWriter, r *http.Request) {
+    log.Println("------------------------------------------------------------------------------")
+    log.Println("routes.DownloadRoutes -> handling request for /downloads/{uniqueID}/{filename}")
 
-		if r.Method != http.MethodGet {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
+    if r.Method != http.MethodGet {
+      http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+      return
+    }
 
-		vars := mux.Vars(r)
-		uniqueID := vars["uniqueID"]
-		filename := vars["filename"]
+    vars := mux.Vars(r)
+    uniqueID := vars["uniqueID"]
+    filename := vars["filename"]
 
-		handlers.DownloadHandler(w, r, uniqueID, filename)
-	})
+    handlers.DownloadHandler(w, r, uniqueID, filename)
+  })
 }

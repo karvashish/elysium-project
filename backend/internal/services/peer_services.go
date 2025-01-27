@@ -1,185 +1,185 @@
 package services
 
 import (
-	"bufio"
-	"crypto/sha256"
-	"elysium-backend/config"
-	"elysium-backend/internal/models"
-	"elysium-backend/internal/repositories"
-	"encoding/binary"
-	"fmt"
-	"log"
-	"math/big"
-	"net"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"time"
+  "bufio"
+  "crypto/sha256"
+  "elysium-backend/config"
+  "elysium-backend/internal/models"
+  "elysium-backend/internal/repositories"
+  "encoding/binary"
+  "fmt"
+  "log"
+  "math/big"
+  "net"
+  "os"
+  "os/exec"
+  "path/filepath"
+  "strings"
+  "time"
 
-	"github.com/google/uuid"
+  "github.com/google/uuid"
 )
 
 func InsertPeer(newPeer *models.Peer) error {
-	if config.GetLogLevel() == "DEBUG" {
-		log.Println("services.InsertPeer -> called")
-	}
+  if config.GetLogLevel() == "DEBUG" {
+    log.Println("services.InsertPeer -> called")
+  }
 
-	if err := repositories.InsertPeer(newPeer); err != nil {
-		log.Println("services.InsertPeer -> Error inserting peer:", err)
-		return err
-	}
+  if err := repositories.InsertPeer(newPeer); err != nil {
+    log.Println("services.InsertPeer -> Error inserting peer:", err)
+    return err
+  }
 
-	return nil
+  return nil
 }
 
 func timeToIp(time *time.Time) net.IP {
-	hash := sha256.Sum256([]byte(time.String()))
-	hash_int := new(big.Int).SetBytes(hash[:])
+  hash := sha256.Sum256([]byte(time.String()))
+  hash_int := new(big.Int).SetBytes(hash[:])
 
-	ip_ranges := config.GetIpRanges()
+  ip_ranges := config.GetIpRanges()
 
-	index := new(big.Int).
-		Mod(hash_int, big.NewInt(int64(len(ip_ranges)))).
-		Int64()
+  index := new(big.Int).
+    Mod(hash_int, big.NewInt(int64(len(ip_ranges)))).
+    Int64()
 
-	selectedRange := ip_ranges[index]
+  selectedRange := ip_ranges[index]
 
-	range_start := new(big.Int).SetBytes(selectedRange.Start.To4()).Int64()
-	range_end := new(big.Int).SetBytes(selectedRange.End.To4()).Int64()
-	range_size := range_end - range_start + 1
+  range_start := new(big.Int).SetBytes(selectedRange.Start.To4()).Int64()
+  range_end := new(big.Int).SetBytes(selectedRange.End.To4()).Int64()
+  range_size := range_end - range_start + 1
 
-	ip_offset := new(big.Int).Mod(hash_int, big.NewInt(range_size)).Int64()
-	allocated_ip_int := range_start + ip_offset
+  ip_offset := new(big.Int).Mod(hash_int, big.NewInt(range_size)).Int64()
+  allocated_ip_int := range_start + ip_offset
 
-	ipBytes := make([]byte, 4)
-	binary.BigEndian.PutUint32(ipBytes, uint32(allocated_ip_int))
+  ipBytes := make([]byte, 4)
+  binary.BigEndian.PutUint32(ipBytes, uint32(allocated_ip_int))
 
-	allocatedIP := net.IP(ipBytes)
-	return allocatedIP
+  allocatedIP := net.IP(ipBytes)
+  return allocatedIP
 }
 
 func AssignNewIP(newPeer *models.Peer) error {
-	if config.GetLogLevel() == "DEBUG" {
-		log.Println("services.assignNewIP -> called")
-	}
+  if config.GetLogLevel() == "DEBUG" {
+    log.Println("services.assignNewIP -> called")
+  }
 
-	allocatedIP := timeToIp(&newPeer.CreatedOn)
+  allocatedIP := timeToIp(&newPeer.CreatedOn)
 
-	is_avail, _ := repositories.IsIpAvailable(allocatedIP)
+  is_avail, _ := repositories.IsIpAvailable(allocatedIP)
 
-	if is_avail {
-		log.Println("services.assignNewIP -> IP Allocated")
-		newPeer.AssignedIP = allocatedIP
-		return nil
-	} else {
-		retry := 0
-		for retry < 100 {
-			retry++
-			adjustedTime := newPeer.CreatedOn.Add(time.Duration(retry) * time.Millisecond)
-			allocatedIP = timeToIp(&adjustedTime)
+  if is_avail {
+    log.Println("services.assignNewIP -> IP Allocated")
+    newPeer.AssignedIP = allocatedIP
+    return nil
+  } else {
+    retry := 0
+    for retry < 100 {
+      retry++
+      adjustedTime := newPeer.CreatedOn.Add(time.Duration(retry) * time.Millisecond)
+      allocatedIP = timeToIp(&adjustedTime)
 
-			is_avail, _ = repositories.IsIpAvailable(allocatedIP)
-			if is_avail {
-				log.Println("services.assignNewIP -> IP Allocated")
-				newPeer.AssignedIP = allocatedIP
-				return nil
-			}
-		}
-		return fmt.Errorf("services.assignNewIP -> Error no available IP after 100 retries")
-	}
+      is_avail, _ = repositories.IsIpAvailable(allocatedIP)
+      if is_avail {
+        log.Println("services.assignNewIP -> IP Allocated")
+        newPeer.AssignedIP = allocatedIP
+        return nil
+      }
+    }
+    return fmt.Errorf("services.assignNewIP -> Error no available IP after 100 retries")
+  }
 }
 
 func GetPeer(peerID *uuid.UUID) (*models.Peer, error) {
-	if config.GetLogLevel() == "DEBUG" {
-		log.Println("services.GetPeer -> called")
-	}
+  if config.GetLogLevel() == "DEBUG" {
+    log.Println("services.GetPeer -> called")
+  }
 
-	peer, err := repositories.GetPeer(*peerID)
-	if err != nil {
-		log.Println("services.GetPeer -> Error retrieving peer:", err)
-		return nil, err
-	}
-	return peer, nil
+  peer, err := repositories.GetPeer(*peerID)
+  if err != nil {
+    log.Println("services.GetPeer -> Error retrieving peer:", err)
+    return nil, err
+  }
+  return peer, nil
 }
 
 func GetAllPeer() ([]models.Peer, error) {
-	if config.GetLogLevel() == "DEBUG" {
-		log.Println("services.GetAllPeer -> called")
-	}
+  if config.GetLogLevel() == "DEBUG" {
+    log.Println("services.GetAllPeer -> called")
+  }
 
-	peers, err := repositories.GetAllPeer()
-	if err != nil {
-		log.Println("services.GetAllPeer -> Error retrieving peers:", err)
-		return nil, err
-	}
-	log.Printf("services.GetAllPeer -> retrived %d peers\n", len(peers))
+  peers, err := repositories.GetAllPeer()
+  if err != nil {
+    log.Println("services.GetAllPeer -> Error retrieving peers:", err)
+    return nil, err
+  }
+  log.Printf("services.GetAllPeer -> retrived %d peers\n", len(peers))
 
-	return peers, nil
+  return peers, nil
 }
 
 func CompileClient(pubKey string, target models.OSArch, assignedIp net.IP) (string, error) {
-	if config.GetLogLevel() == "DEBUG" {
-		log.Println("services.CompileClient -> called")
-	}
-	serverIp := config.GetEnv("BACKEND_WG_IP", "10.0.0.1")
+  if config.GetLogLevel() == "DEBUG" {
+    log.Println("services.CompileClient -> called")
+  }
+  serverIp := config.GetEnv("BACKEND_WG_IP", "10.0.0.1")
 
-	if err := target.Validate(); err != nil {
-		log.Println("services.CompileClient -> invalid target:", err)
-		return "", err
-	}
+  if err := target.Validate(); err != nil {
+    log.Println("services.CompileClient -> invalid target:", err)
+    return "", err
+  }
 
-	clientDir := config.GetEnv("CLIENT_DIR", "./client")
-	binaryName := config.GetEnv("BINARY_NAME", "elysium-client")
-	if target == "x86_64-pc-windows-gnu" {
-		binaryName += ".exe"
-	}
-	outputDir := config.GetEnv("OUTPUT_DIR", "./compiled_binaries")
-	compileArgs := strings.Fields(config.GetEnv("COMPILE_ARGS", ""))
+  clientDir := config.GetEnv("CLIENT_DIR", "./client")
+  binaryName := config.GetEnv("BINARY_NAME", "elysium-client")
+  if target == "x86_64-pc-windows-gnu" {
+    binaryName += ".exe"
+  }
+  outputDir := config.GetEnv("OUTPUT_DIR", "./compiled_binaries")
+  compileArgs := strings.Fields(config.GetEnv("COMPILE_ARGS", ""))
 
-	args := append([]string{"build", "--release", "--target", string(target)}, compileArgs...)
-	cmd := exec.Command("cargo", args...)
-	cmd.Dir = clientDir
-	cmd.Env = append(
-		os.Environ(),
-		"ADDR="+assignedIp.String(),
-		"CIDR="+fmt.Sprint(24),
-		"SERVERPUB="+pubKey,
-		"SERVERENDPOINT=192.168.0.1:51820",
-		"SERVERIP="+serverIp,
-	)
-	if target == models.OSArchx86_64Linux {
-		cmd.Env = append(cmd.Env, "RUSTFLAGS=-C linker=x86_64-linux-gnu-gcc")
-	}
+  args := append([]string{"build", "--release", "--target", string(target)}, compileArgs...)
+  cmd := exec.Command("cargo", args...)
+  cmd.Dir = clientDir
+  cmd.Env = append(
+    os.Environ(),
+    "ADDR="+assignedIp.String(),
+    "CIDR="+fmt.Sprint(24),
+    "SERVERPUB="+pubKey,
+    "SERVERENDPOINT=192.168.0.1:51820",
+    "SERVERIP="+serverIp,
+    )
+  if target == models.OSArchx86_64Linux {
+    cmd.Env = append(cmd.Env, "RUSTFLAGS=-C linker=x86_64-linux-gnu-gcc")
+  }
 
-	stderr, _ := cmd.StderrPipe()
-	if err := cmd.Start(); err != nil {
-		log.Println("services.CompileClient -> command start failed:", err)
-		return "", err
-	}
+  stderr, _ := cmd.StderrPipe()
+  if err := cmd.Start(); err != nil {
+    log.Println("services.CompileClient -> command start failed:", err)
+    return "", err
+  }
 
-	scanner := bufio.NewScanner(stderr)
-	for scanner.Scan() {
-		log.Println("services.CompileClient -> build output:", scanner.Text())
-	}
+  scanner := bufio.NewScanner(stderr)
+  for scanner.Scan() {
+    log.Println("services.CompileClient -> build output:", scanner.Text())
+  }
 
-	if err := cmd.Wait(); err != nil {
-		log.Println("services.CompileClient -> command execution failed:", err)
-		return "", err
-	}
+  if err := cmd.Wait(); err != nil {
+    log.Println("services.CompileClient -> command execution failed:", err)
+    return "", err
+  }
 
-	destPath := filepath.Join(outputDir, fmt.Sprintf("%d", time.Now().UnixNano()), binaryName)
-	if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
-		log.Println("services.CompileClient -> failed to create directory:", err)
-		return "", err
-	}
+  destPath := filepath.Join(outputDir, fmt.Sprintf("%d", time.Now().UnixNano()), binaryName)
+  if err := os.MkdirAll(filepath.Dir(destPath), os.ModePerm); err != nil {
+    log.Println("services.CompileClient -> failed to create directory:", err)
+    return "", err
+  }
 
-	sourcePath := filepath.Join(clientDir, "target", string(target), "release", binaryName)
-	if err := os.Rename(sourcePath, destPath); err != nil {
-		log.Println("services.CompileClient -> failed to move executable:", err)
-		return "", err
-	}
+  sourcePath := filepath.Join(clientDir, "target", string(target), "release", binaryName)
+  if err := os.Rename(sourcePath, destPath); err != nil {
+    log.Println("services.CompileClient -> failed to move executable:", err)
+    return "", err
+  }
 
-	relativePath, _ := filepath.Rel(outputDir, destPath)
-	return relativePath, nil
+  relativePath, _ := filepath.Rel(outputDir, destPath)
+  return relativePath, nil
 }
